@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "traffic-monitor-fastapi"
+version = "0.1.0"
+description = ""
+authors = ["Timspizza <peisen.jiang2001@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.115.6"
+pypcap = "^1.3.0"
+scapy = "^2.6.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
