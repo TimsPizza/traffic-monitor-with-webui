@@ -7,7 +7,7 @@ import time
 
 from utils.Interfaces import (
     DynamicQueueResizeStrategy,
-    DynamicQueueResizeStrategyBase,
+    BaseDynamicQueueResizeStrategy,
 )
 
 T = TypeVar("T")
@@ -22,7 +22,7 @@ class DynamicQueue(Generic[T]):
         shrink_factor: float = 0.5,
         # specify batch size for resizing check
         process_batch_size: int = 10,
-        strategy: DynamicQueueResizeStrategyBase = None,
+        strategy: BaseDynamicQueueResizeStrategy = None,
     ):
         if min_size <= 0 or max_size <= 0 or min_size >= max_size:
             raise ValueError("Invalid queue size parameters")

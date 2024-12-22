@@ -11,7 +11,13 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
-class BatchProcessor(Generic[T]):
+class BaseProducer(Generic[T], ABC):
+    @abstractmethod
+    def produce(self) -> Optional[T]:
+        pass
+
+
+class BaseBatchConsumer(Generic[T]):
     """批处理器接口"""
 
     @abstractmethod
@@ -20,28 +26,7 @@ class BatchProcessor(Generic[T]):
         pass
 
 
-class DataProcessor(BatchProcessor[T]):
-    """数据处理器基类"""
-
-    def __init__(self, queue: "DoubleBufferQueue[T]"):
-        self.queue = queue
-        self.queue.processor = self.process_batch
-
-    @abstractmethod
-    def process_batch(self, items: List[T]) -> None:
-        """处理一批数据的具体实现"""
-        pass
-
-    def start(self) -> None:
-        """启动处理"""
-        self.queue.start()
-
-    def stop(self) -> None:
-        """停止处理"""
-        self.queue.stop()
-
-
-class Producer(Generic[T], ABC):
+class BaseBatchProducer(Generic[T], ABC):
     """Base producer interface"""
 
     def __init__(self, queue: DoubleBufferQueue[T]):
@@ -78,7 +63,28 @@ class Producer(Generic[T], ABC):
                 self.logger.error(f"Error in production loop: {e}")
 
 
-class BatchProducer(Producer[T]):
+class DataProcessor(BaseBatchConsumer[T]):
+    """数据处理器基类"""
+
+    def __init__(self, queue: "DoubleBufferQueue[T]"):
+        self.queue = queue
+        self.queue.processor = self.process_batch
+
+    @abstractmethod
+    def process_batch(self, items: List[T]) -> None:
+        """处理一批数据的具体实现"""
+        pass
+
+    def start(self) -> None:
+        """启动处理"""
+        self.queue.start()
+
+    def stop(self) -> None:
+        """停止处理"""
+        self.queue.stop()
+
+
+class BatchProducer(BaseBatchProducer[T]):
     """Base class for batch-oriented producers"""
 
     def __init__(
@@ -92,6 +98,8 @@ class BatchProducer(Producer[T]):
         self.produce_interval = produce_interval
         self._items_produced = 0
         self._last_produce_time = time.time()
+        self._should_produce = Event()
+        
 
     @abstractmethod
     def produce_batch(self) -> list[T]:
@@ -158,7 +166,7 @@ class SizeBasedStrategy(BufferStrategy):
         return current_size >= (max_size * self.threshold_ratio)
 
 
-class DynamicQueueResizeStrategyBase(ABC):
+class BaseDynamicQueueResizeStrategy(ABC):
     @abstractmethod
     def should_expand(self, current_size: int, max_size: int) -> bool:
         pass
@@ -176,7 +184,7 @@ class DynamicQueueResizeStrategyBase(ABC):
         pass
 
 
-class DynamicQueueResizeStrategy(DynamicQueueResizeStrategyBase):
+class DynamicQueueResizeStrategy(BaseDynamicQueueResizeStrategy):
     def __init__(
         self,
         expand_threshold_ratio: float,
