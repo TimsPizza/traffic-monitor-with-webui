@@ -6,6 +6,7 @@ import ipaddress
 import os
 import sys
 
+from packet.Packet import CapturedPacket
 from packet.PacketProducer import PacketProducer
 from utils.DoubleBufferQueue import DoubleBufferQueue
 
@@ -27,10 +28,8 @@ async def read_root():
 
 
 def start_sniffing(filter_rule):
-    double_buffer_queue = DoubleBufferQueue()
-    producer = PacketProducer(
-        double_buffer_queue, interface="enp0s6", filter=filter_rule
-    )
+    double_buffer_queue = DoubleBufferQueue[CapturedPacket]()
+    producer = PacketProducer(double_buffer_queue, interface="eth0", filter=None)
     double_buffer_queue.start()
     producer.start()
 

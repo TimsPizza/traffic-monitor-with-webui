@@ -1,6 +1,7 @@
 import logging
 import time
 from typing import Optional
+from packet.Packet import CapturedPacket
 from packet.PacketCapturer import PacketCapturer
 from utils.DoubleBufferQueue import DoubleBufferQueue
 from scapy.all import Ether
@@ -9,10 +10,12 @@ from scapy.all import Ether
 class PacketProducer:
     def __init__(
         self,
-        buffer: Optional[DoubleBufferQueue] = None,
+        buffer: DoubleBufferQueue = None,
         filter: str = None,
         interface: str = None,
     ):
+        if self._buffer is None:
+            raise ValueError("Buffer cannot be None")
         self._buffer = buffer
         self._filter = filter
         self.captured_packets_count = 0
@@ -41,8 +44,8 @@ class PacketProducer:
 
     def _on_packet_captured(self, packet: bytes, timestamp: float):
         self.captured_packets_count += 1
-        scapy_packet = Ether(packet)
-        self._enqueue_packet(packet)
+        # push raw packet to avoid unnecessary parsing leading to data loss
+        self._enqueue_packet(CapturedPacket(packet, timestamp))
         # self.logger.info(
         #     f"{self.captured_packets_count}th Packet: {scapy_packet.summary()} captured at {timestamp}, "
         #     f"Protocol: {scapy_packet.proto if hasattr(scapy_packet, 'proto') else 'N/A'}, "

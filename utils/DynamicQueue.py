@@ -25,6 +25,11 @@ class DynamicQueue(Generic[T]):
         strategy: BaseDynamicQueueResizeStrategy = None,
         queue_id: Optional[str] = None,
     ):
+        self._name = (
+            f"{self.__class__.__name__}-{queue_id}"
+            if queue_id
+            else self.__class__.__name__
+        )
         if min_size <= 0 or max_size <= 0 or min_size >= max_size:
             raise ValueError("Invalid queue size parameters")
         if growth_factor <= 1.0 or shrink_factor >= 1.0:
@@ -33,9 +38,9 @@ class DynamicQueue(Generic[T]):
         self.limit_max_size = max_size
         self.limit_min_size = min_size
         self._strategy = strategy or DynamicQueueResizeStrategy(
-            expand_threshold_ratio=0.65,
             shrink_timeout_seconds=15.0,
             shrink_check_interval_seconds=5.0,
+            shrink_factor=shrink_factor,
         )
         self.growth_factor = growth_factor
         self.shrink_factor = shrink_factor
@@ -69,11 +74,7 @@ class DynamicQueue(Generic[T]):
         self._start_time = time.time()
 
         logging.basicConfig(level=logging.INFO)
-        self.logger = logging.getLogger(
-            f"{self.__class__.__name__} - {queue_id}"
-            if queue_id
-            else self.__class__.__name__
-        )
+        self.logger = logging.getLogger(self.name)
 
     # used for context manager
     def __enter__(self):
@@ -92,10 +93,12 @@ class DynamicQueue(Generic[T]):
     def current_max_size(self) -> int:
         return self.queue.maxlen
 
+    @property
+    def name(self) -> str:
+        return self._name
+
     def start(self):
         self.not_full.set()
-        self._shrink_monitor.daemon = False
-        self._metrics_monitor.daemon = False
         self._shrink_monitor.start()
         self._metrics_monitor.start()
 
@@ -154,7 +157,11 @@ class DynamicQueue(Generic[T]):
 
     def _shrink_monitor_loop(self):
         while not self.should_stop.is_set():
-            if self._strategy.should_shrink(len(self.queue), self.queue.maxlen):
+            with self._lock:
+                queue_len = len(self.queue)
+            should_shrink = self._strategy.should_shrink(queue_len)
+            self.logger.info(f"{self.name}: Should shrink: {should_shrink}")
+            if should_shrink:
                 self._resize_queue(increase=False)
             # wait for a while before checking again to reduce overhead
             time.sleep(self._strategy.shrink_check_interval)
@@ -165,12 +172,14 @@ class DynamicQueue(Generic[T]):
             time.sleep(1.0)
 
     def _resize_queue(self, increase: bool):
+        self.logger.info(f"{'Expanding' if increase else 'Shrinking'} queue")
         with self._lock:
             current_max = self.current_max_size
         if increase:
             new_max = min(int(current_max * self.growth_factor), self.limit_max_size)
         else:
             new_max = max(int(current_max * self.shrink_factor), self.limit_min_size)
+        self.logger.info(f"New max size: {new_max}, current max size: {current_max}")
         if new_max != current_max:
             with self._lock:
                 new_queue = deque(self.queue, maxlen=new_max)

@@ -49,6 +49,8 @@ class DoubleBufferQueue(Generic[T]):
         self._swap_event = Event()
         self._stop_event = Event()
         self._swap_thread = Thread(target=self._swap_monitor_by_time_loop)
+        self._active_queue_avg_loads:List[float] = []
+        self._processing_queue_avg_loads:List[float] = []
         # Metrics
         self._metrics: Dict[str, Union[int, float]] = {
             "total_processed": 0,
