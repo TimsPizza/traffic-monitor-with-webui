@@ -28,36 +28,25 @@ async def read_root():
 
 def start_sniffing(filter_rule):
     double_buffer_queue = DoubleBufferQueue()
-    producer = PacketProducer(double_buffer_queue, interface='eth0')
+    producer = PacketProducer(
+        double_buffer_queue, interface="enp0s6", filter=filter_rule
+    )
     double_buffer_queue.start()
     producer.start()
-
-
-def packet_handler(pktlen, data, timestamp):
-    if not data:
-        return
-    packet = Ether(data)
-    # packet.show()
-    if IP in packet:
-        ip_layer = packet[IP]
-        print(f"Source IP: {ip_layer.src}, Destination IP: {ip_layer.dst}")
-
-    if TCP in packet:
-        tcp_layer = packet[TCP]
-        print(f"Source Port: {tcp_layer.sport}, Destination Port: {tcp_layer.dport}")
 
 
 @app.get("/start_capture")
 def start_capture(
     background_tasks: BackgroundTasks, src_ip: str = None, port: int = None
 ):
-    filter_rule = ""
+    filter_rule = "tcp and (dst port 22 or dst port 23 or dst port 80 or dst port 443 or dst port 8080 or dst port 9000 or dst port 1026)"
     if src_ip:
         filter_rule += f"src host {src_ip} "
     if port:
         if filter_rule:
             filter_rule += "and "
         filter_rule += f"port {port}"
+
     if not filter_rule:
         filter_rule = "tcp"  # 默认过滤所有 TCP 包
 

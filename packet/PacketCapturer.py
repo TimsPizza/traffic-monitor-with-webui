@@ -12,13 +12,13 @@ class PacketCapturer:
             raise ValueError(f"Interface {self.interface} does not exist")
 
         self._pcap = pcap.pcap(name=interface, promisc=True, immediate=True)
-        if filter:
-            self.set_filter(filter)
         self._stop_event = Event()
-        self._capture_thread: Optional[Thread] = Thread(target=self._capture_loop)
+        self._capture_thread: Thread = Thread(target=self._capture_loop)
         self._callback: Optional[Callable] = None
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.setLevel(logging.INFO)
+        if filter:
+            self.set_filter(filter)
 
     def set_filter(self, filter: str) -> None:
         """Set packet filter"""
@@ -32,13 +32,10 @@ class PacketCapturer:
 
     def start_capture(self) -> None:
         """Start packet capture in separate thread"""
-        if self._capture_thread is not None:
-            return
-        
         self._capture_thread.daemon = True
         self._capture_thread.start()
         self.logger.info(
-            "Capture started with filter: {self._pcap.filter}, listening on interface: {self.interface}"
+            f"Capture started with filter: {self._pcap.filter}, listening on interface: {self.interface}"
         )
 
     def stop_capture(self) -> None:

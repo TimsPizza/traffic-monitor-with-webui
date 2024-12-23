@@ -3,6 +3,7 @@ import time
 from typing import Optional
 from packet.PacketCapturer import PacketCapturer
 from utils.DoubleBufferQueue import DoubleBufferQueue
+from scapy.all import Ether
 
 
 class PacketProducer:
@@ -40,10 +41,14 @@ class PacketProducer:
 
     def _on_packet_captured(self, packet: bytes, timestamp: float):
         self.captured_packets_count += 1
+        scapy_packet = Ether(packet)
         self._enqueue_packet(packet)
-        self.logger.info(
-            f"{self.captured_packets_count}th Packet captured at {timestamp}"
-        )
+        # self.logger.info(
+        #     f"{self.captured_packets_count}th Packet: {scapy_packet.summary()} captured at {timestamp}, "
+        #     f"Protocol: {scapy_packet.proto if hasattr(scapy_packet, 'proto') else 'N/A'}, "
+        #     f"Source: {scapy_packet.src if hasattr(scapy_packet, 'src') else 'N/A'}, "
+        #     f"Destination Port: {scapy_packet.dport if hasattr(scapy_packet, 'dport') else 'N/A'}"
+        # )
 
     def _enqueue_packet(self, packet):
         self._buffer.enqueue(packet)

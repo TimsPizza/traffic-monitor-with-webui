@@ -11,7 +11,6 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
-
 class BaseBatchConsumer(Generic[T]):
     """批处理器接口"""
 
@@ -82,9 +81,9 @@ class SizeBasedStrategy(BufferStrategy):
     def should_swap(self, current_size: int, max_size: int) -> bool:
         # swap when current size exceeds the threshold
         return current_size >= (max_size * self.threshold_ratio)
-     
+
     def on_swap(self):
-        pass 
+        pass
 
 
 class BaseDynamicQueueResizeStrategy(ABC):
@@ -127,7 +126,7 @@ class DynamicQueueResizeStrategy(BaseDynamicQueueResizeStrategy):
         return flag
 
     def should_shrink(self, current_size: int, max_size: int) -> bool:
-        flag_time = time.time() - self.last_shrink_time >= self.shrink_timeout
+        flag_time = time.time() - self.last_expand_time >= self.shrink_timeout
         flag_size = not self.should_expand(current_size, max_size)
         if flag_time and flag_size:
             self.on_shrink()

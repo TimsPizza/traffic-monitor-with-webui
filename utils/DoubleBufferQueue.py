@@ -14,8 +14,8 @@ T = TypeVar("T")
 class DoubleBufferQueue(Generic[T]):
     def __init__(
         self,
-        max_size: int = 10000,
-        min_size: int = 1000,
+        max_size: int = 32768,
+        min_size: int = 256,
         swap_strategy: Optional[BufferStrategy] = None,
         growth_factor: float = 1.5,
         shrink_factor: float = 0.5,
@@ -27,21 +27,22 @@ class DoubleBufferQueue(Generic[T]):
                 max_size=max_size,
                 growth_factor=growth_factor,
                 shrink_factor=shrink_factor,
-                queue_id="active",
+                queue_id="1",
             ),
             DynamicQueue(
                 min_size=min_size,
                 max_size=max_size,
                 growth_factor=growth_factor,
                 shrink_factor=shrink_factor,
-                queue_id="processing",
+                queue_id="2",
             ),
         )
         self.max_size = max_size
         self.min_size = min_size
         self._active_index = 0
         self._index_lock = Lock()
-        self._strategy = swap_strategy or SizeBasedStrategy(threshold_ratio=0.5)
+        # make sure threshold_ratio is less than Dynamic queue expand_threshold_ratio because it is designed to be expanded first, or error will occur
+        self._strategy = swap_strategy or SizeBasedStrategy(threshold_ratio=0.8)
 
         # Threading controls
         self._metrics_lock = RLock()  # For metrics updates
@@ -78,22 +79,29 @@ class DoubleBufferQueue(Generic[T]):
             return False
 
         if self._strategy and self._strategy.should_swap(
-            current_size=self._active_queue.size, max_size=self._active_queue.max_size
+            current_size=len(self._active_queue),
+            max_size=self._active_queue.current_max_size,
         ):
-            self._swap_event.set()
+            # self._swap_event.set()
+            self.logger.info("Swap event triggered")
+            self._swap_buffers()
         return True
 
     def popleft(self) -> Optional[T]:
         """Pop item from processing queue"""
-        item = self._processing_queue.popleft()
-        if item:
-            with self._metrics_lock:
-                self._metrics["total_processed"] += 1
+        if not self._processing_queue.empty():
+            item = self._processing_queue.popleft()
+        else:
+            # dynamic queue expand first, this is to prevent consumer from waiting on the empty processing-queue
+            item = self._active_queue.popleft()
+            if item:
+                with self._metrics_lock:
+                    self._metrics["total_processed"] += 1
         return item
 
     def _swap_monitor_by_time_loop(self) -> None:
-        self.logger.info("Waiting for swap event")
         while not self._stop_event.is_set():
+            self.logger.info("Waiting for swap event")
             self._swap_event.wait()
             self._swap_buffers()
             self._swap_event.clear()
