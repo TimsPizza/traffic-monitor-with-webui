@@ -11,11 +11,6 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
-class BaseProducer(Generic[T], ABC):
-    @abstractmethod
-    def produce(self) -> Optional[T]:
-        pass
-
 
 class BaseBatchConsumer(Generic[T]):
     """批处理器接口"""
@@ -24,43 +19,6 @@ class BaseBatchConsumer(Generic[T]):
     def process_batch(self, items: List[T]) -> None:
         """处理一批数据"""
         pass
-
-
-class BaseBatchProducer(Generic[T], ABC):
-    """Base producer interface"""
-
-    def __init__(self, queue: DoubleBufferQueue[T]):
-        self.queue = queue
-        self._should_stop = Event()
-        self._producer_thread: Optional[Thread] = None
-        self.logger = logging.getLogger(self.__class__.__name__)
-
-    @abstractmethod
-    def produce(self) -> Optional[T]:
-        """Generate next item to be produced"""
-        pass
-
-    def start(self) -> None:
-        """Start the producer thread"""
-        self._producer_thread = Thread(target=self._produce_loop, daemon=True)
-        self._producer_thread.start()
-
-    def stop(self) -> None:
-        """Stop the producer thread"""
-        self._should_stop.set()
-        if self._producer_thread and self._producer_thread.is_alive():
-            self._producer_thread.join(timeout=5.0)
-
-    def _produce_loop(self) -> None:
-        """Main production loop"""
-        while not self._should_stop.is_set():
-            try:
-                item = self.produce()
-                if item is not None:
-                    if not self.queue.put(item):
-                        self.logger.warning("Queue full, item dropped")
-            except Exception as e:
-                self.logger.error(f"Error in production loop: {e}")
 
 
 class DataProcessor(BaseBatchConsumer[T]):
@@ -82,46 +40,6 @@ class DataProcessor(BaseBatchConsumer[T]):
     def stop(self) -> None:
         """停止处理"""
         self.queue.stop()
-
-
-class BatchProducer(BaseBatchProducer[T]):
-    """Base class for batch-oriented producers"""
-
-    def __init__(
-        self,
-        queue: DoubleBufferQueue[T],
-        batch_size: int = 100,
-        produce_interval: float = 0.1,
-    ):
-        super().__init__(queue)
-        self.batch_size = batch_size
-        self.produce_interval = produce_interval
-        self._items_produced = 0
-        self._last_produce_time = time.time()
-        self._should_produce = Event()
-        
-
-    @abstractmethod
-    def produce_batch(self) -> list[T]:
-        """Generate a batch of items"""
-        pass
-
-    def produce(self) -> Optional[T]:
-        """Implement single item production from batch"""
-        current_time = time.time()
-        if current_time - self._last_produce_time < self.produce_interval:
-            time.sleep(self.produce_interval)
-
-        batch = self.produce_batch()
-        self._last_produce_time = time.time()
-        self._items_produced += len(batch)
-
-        for item in batch:
-            if self._should_stop.is_set():
-                break
-            if not self.queue.put(item):
-                self.logger.warning("Queue full, dropping remaining batch items")
-                break
 
 
 class BufferStrategy(ABC):
@@ -153,17 +71,20 @@ class TimeBasedStrategy(BufferStrategy):
 
 
 class SizeBasedStrategy(BufferStrategy):
-    """基于当前队列大小的交换策略"""
+    """Based on the size of the queue"""
 
     def __init__(self, threshold_ratio: float):
-        # 使用比例而不是固定大小
+        # use ratio instead of absolute size
         if not 0 < threshold_ratio < 1:
             raise ValueError("Threshold ratio must be between 0 and 1")
         self.threshold_ratio = threshold_ratio
 
     def should_swap(self, current_size: int, max_size: int) -> bool:
-        # 基于当前队列大小和其容量的比例来决定是否交换
+        # swap when current size exceeds the threshold
         return current_size >= (max_size * self.threshold_ratio)
+     
+    def on_swap(self):
+        pass 
 
 
 class BaseDynamicQueueResizeStrategy(ABC):

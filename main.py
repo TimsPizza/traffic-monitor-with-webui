@@ -3,9 +3,11 @@ from fastapi import FastAPI, BackgroundTasks
 from contextlib import asynccontextmanager
 from scapy.all import Ether, IP, TCP
 import ipaddress
-import pcap
 import os
 import sys
+
+from packet.PacketProducer import PacketProducer
+from utils.DoubleBufferQueue import DoubleBufferQueue
 
 
 @asynccontextmanager
@@ -13,6 +15,7 @@ async def life_span(app: FastAPI):
     print("Starting")
     yield
     print("Exiting")
+
 
 app = FastAPI(lifespan=life_span)
 rules = [{"ip_range": ipaddress.IPv4Network("0.0.0.0/0")}]
@@ -24,15 +27,10 @@ async def read_root():
 
 
 def start_sniffing(filter_rule):
-    try:
-        sniffer = pcap.pcap(name=None, promisc=True, immediate=True)
-        sniffer.setfilter(filter_rule)
-        # pcap.pcap returns only 2 values: (timestamp, packet_data)
-        for timestamp, data in sniffer:
-            packet_handler(len(data), data, timestamp)
-    except Exception as e:
-        print(f"Error in packet capture: {e}")
-        return
+    double_buffer_queue = DoubleBufferQueue()
+    producer = PacketProducer(double_buffer_queue, interface='eth0')
+    double_buffer_queue.start()
+    producer.start()
 
 
 def packet_handler(pktlen, data, timestamp):
@@ -46,8 +44,7 @@ def packet_handler(pktlen, data, timestamp):
 
     if TCP in packet:
         tcp_layer = packet[TCP]
-        print(
-            f"Source Port: {tcp_layer.sport}, Destination Port: {tcp_layer.dport}")
+        print(f"Source Port: {tcp_layer.sport}, Destination Port: {tcp_layer.dport}")
 
 
 @app.get("/start_capture")
@@ -67,6 +64,7 @@ def start_capture(
     background_tasks.add_task(start_sniffing, filter_rule)
     return {"status": "Capturing started with filter:", "filter": filter_rule}
 
+
 # Add at the start of your main.py
 
 
@@ -74,10 +72,10 @@ def check_root():
     print("Checking root privileges...")
     if os.geteuid() != 0:
         print("This script must be run as root!")
-        args = ['sudo', sys.executable] + sys.argv
-        os.execvp('sudo', args)
+        args = ["sudo", sys.executable] + sys.argv
+        os.execvp("sudo", args)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     check_root()
-    uvicorn.run('main:app', host='0.0.0.0', port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

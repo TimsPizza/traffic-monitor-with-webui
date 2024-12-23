@@ -23,6 +23,7 @@ class DynamicQueue(Generic[T]):
         # specify batch size for resizing check
         process_batch_size: int = 10,
         strategy: BaseDynamicQueueResizeStrategy = None,
+        queue_id: Optional[str] = None,
     ):
         if min_size <= 0 or max_size <= 0 or min_size >= max_size:
             raise ValueError("Invalid queue size parameters")
@@ -71,7 +72,9 @@ class DynamicQueue(Generic[T]):
         self._start_time = time.time()
 
         logging.basicConfig(level=logging.INFO)
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = logging.getLogger(
+            queue_id if queue_id else self.__class__.__name__
+        )
 
     # used for context manager
     def __enter__(self):
@@ -88,15 +91,12 @@ class DynamicQueue(Generic[T]):
 
     def start(self):
         self.not_full.set()
-        self._shrink_monitor.start()
-        self._metrics_monitor.start()
-        # make sure all clean-ups can be done before exit
         self._shrink_monitor.daemon = False
         self._metrics_monitor.daemon = False
-        signal.signal(signal.SIGINT, self._handle_shutdown)
-        signal.signal(signal.SIGTERM, self._handle_shutdown)
+        self._shrink_monitor.start()
+        self._metrics_monitor.start()
 
-    def put(self, item: T) -> bool:
+    def enqueue(self, item: T) -> bool:
         # Tries to put an item in the queue, if the queue is full, it returns False
         try:
             with self._lock:
@@ -112,7 +112,7 @@ class DynamicQueue(Generic[T]):
                 self.not_empty.set()
 
                 # check if need to resize the queue
-                # only check per batch to reduce resizing overhead
+                # only check per batch-insertion to reduce resizing overhead
                 if self._enqueue_batch_counter >= self.process_batch_size:
                     self._enqueue_batch_counter = 0
                     if self._strategy.should_expand(len(self.queue), self.queue.maxlen):
@@ -124,7 +124,7 @@ class DynamicQueue(Generic[T]):
                 self.stats["dropped"] += 1
             return False
 
-    def pop(self) -> Optional[T]:
+    def popleft(self) -> Optional[T]:
         with self._lock:
             if not self.queue:
                 return None
@@ -133,7 +133,7 @@ class DynamicQueue(Generic[T]):
             self._operation_batch_counter += 1
             self._enqueue_batch_counter -= 1
             self.stats["dequeued"] += 1
-            return item
+        return item
 
     def peek(self) -> Optional[T]:
         with self._lock:
@@ -157,6 +157,7 @@ class DynamicQueue(Generic[T]):
     def _shrink_monitor_loop(self):
         while not self.should_stop.is_set():
             if self._strategy.should_shrink(len(self.queue), self.queue.maxlen):
+                self.logger.info("Shrinking queue")
                 self._resize_queue(increase=False)
             # wait for a while before checking again to reduce overhead
             time.sleep(self._strategy.shrink_check_interval)
