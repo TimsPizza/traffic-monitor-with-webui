@@ -14,9 +14,9 @@ class PacketProducer:
         filter: str = None,
         interface: str = None,
     ):
+        self._buffer = buffer
         if self._buffer is None:
             raise ValueError("Buffer cannot be None")
-        self._buffer = buffer
         self._filter = filter
         self.captured_packets_count = 0
         self._capturer = PacketCapturer(interface=interface, filter=filter)

@@ -1,11 +1,12 @@
 import uvicorn
 from fastapi import FastAPI, BackgroundTasks
+from fastapi.logger import logger
 from contextlib import asynccontextmanager
 from scapy.all import Ether, IP, TCP
-import ipaddress
 import os
 import sys
 
+from packet.PacketConsumer import PacketConsumer
 from packet.Packet import CapturedPacket
 from packet.PacketProducer import PacketProducer
 from utils.DoubleBufferQueue import DoubleBufferQueue
@@ -13,13 +14,12 @@ from utils.DoubleBufferQueue import DoubleBufferQueue
 
 @asynccontextmanager
 async def life_span(app: FastAPI):
-    print("Starting")
+    logger.info("Starting")
     yield
-    print("Exiting")
+    logger.info("Stopping")
 
 
 app = FastAPI(lifespan=life_span)
-rules = [{"ip_range": ipaddress.IPv4Network("0.0.0.0/0")}]
 
 
 @app.get("/")
@@ -30,8 +30,10 @@ async def read_root():
 def start_sniffing(filter_rule):
     double_buffer_queue = DoubleBufferQueue[CapturedPacket]()
     producer = PacketProducer(double_buffer_queue, interface="eth0", filter=None)
+    consumer = PacketConsumer(double_buffer_queue, max_workers=8, batch_size=128)
     double_buffer_queue.start()
     producer.start()
+    consumer.start()
 
 
 @app.get("/start_capture")

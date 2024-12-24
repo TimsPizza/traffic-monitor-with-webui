@@ -49,8 +49,8 @@ class DoubleBufferQueue(Generic[T]):
         self._swap_event = Event()
         self._stop_event = Event()
         self._swap_thread = Thread(target=self._swap_monitor_by_time_loop)
-        self._active_queue_avg_loads:List[float] = []
-        self._processing_queue_avg_loads:List[float] = []
+        self._active_queue_avg_loads: List[float] = []
+        self._processing_queue_avg_loads: List[float] = []
         # Metrics
         self._metrics: Dict[str, Union[int, float]] = {
             "total_processed": 0,
@@ -91,15 +91,19 @@ class DoubleBufferQueue(Generic[T]):
 
     def popleft(self) -> Optional[T]:
         """Pop item from processing queue"""
-        if not self._processing_queue.empty():
-            item = self._processing_queue.popleft()
-        else:
-            # dynamic queue expand first, this is to prevent consumer from waiting on the empty processing-queue
-            item = self._active_queue.popleft()
-            if item:
-                with self._metrics_lock:
-                    self._metrics["total_processed"] += 1
-        return item
+        try:
+            if not self._processing_queue.empty():
+                item = self._processing_queue.popleft()
+            else:
+                # dynamic queue expand first, this is to prevent consumer from waiting on the empty processing-queue
+                item = self._active_queue.popleft()
+                if item:
+                    with self._metrics_lock:
+                        self._metrics["total_processed"] += 1
+            return item if item else None
+        except Exception as e:
+            self.logger.error(f"Error in 'popleft': {e}")
+            return None
 
     def _swap_monitor_by_time_loop(self) -> None:
         while not self._stop_event.is_set():

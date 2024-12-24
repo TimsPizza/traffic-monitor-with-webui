@@ -88,6 +88,10 @@ class DynamicQueue(Generic[T]):
     def __len__(self) -> int:
         with self._lock:
             return len(self.queue)
+        
+    def empty(self) -> bool:
+        with self._lock:
+            return len(self.queue) == 0
 
     @property
     def current_max_size(self) -> int:
