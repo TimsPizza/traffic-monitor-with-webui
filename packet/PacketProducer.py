@@ -25,17 +25,21 @@ class PacketProducer:
 
     def start(self):
         self._capturer.register_callback(self._on_packet_captured)
-        self._capturer.start_capture()
+        self._capturer.start()
         self.logger.info(f"Producer started at {time.time()}")
 
+    @property
+    def is_running(self):
+        return self._capturer.is_running
+
     def stop(self):
-        self._capturer.stop_capture()
+        self._capturer.stop()
         self.logger.info(f"Producer stopped at {time.time()}")
 
     def restart(self):
-        self._capturer.stop_capture()
+        self._capturer.stop()
         time.sleep(0.5)
-        self._capturer.start_capture()
+        self._capturer.start()
         self.logger.info(f"Producer restarted at {time.time()}")
 
     def apply_filter(self, filter):

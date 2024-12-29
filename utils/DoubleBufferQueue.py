@@ -5,8 +5,8 @@ import time
 from threading import RLock
 import threading
 
-from .DynamicQueue import DynamicQueue
-from utils.Interfaces import BaseBatchConsumer, BufferStrategy, SizeBasedStrategy
+from . import DynamicQueue
+from utils import BufferStrategy, SizeBasedStrategy
 
 T = TypeVar("T")
 
@@ -14,7 +14,7 @@ T = TypeVar("T")
 class DoubleBufferQueue(Generic[T]):
     def __init__(
         self,
-        max_size: int = 32768,
+        max_size: int = 8192,
         min_size: int = 256,
         swap_strategy: Optional[BufferStrategy] = None,
         growth_factor: float = 1.5,
@@ -48,6 +48,7 @@ class DoubleBufferQueue(Generic[T]):
         self._metrics_lock = RLock()  # For metrics updates
         self._swap_event = Event()
         self._stop_event = Event()
+        self._stop_event.set()
         self._swap_thread = Thread(target=self._swap_monitor_by_time_loop)
         self._active_queue_avg_loads: List[float] = []
         self._processing_queue_avg_loads: List[float] = []
@@ -127,9 +128,19 @@ class DoubleBufferQueue(Generic[T]):
 
     def start(self) -> None:
         """Start processing"""
+        self._stop_event.clear()
+        self._swap_thread.daemon = True
         self._swap_thread.start()
+        self._queues[0].clear()
+        self._queues[1].clear()
+
         self._queues[0].start()
         self._queues[1].start()
+        self.logger.info("DoubleBufferQueue started")
+
+    @property
+    def is_running(self):
+        return not self._stop_event.is_set()
 
     def stop(self) -> None:
         """Stop processing and clean up resources"""
@@ -138,7 +149,8 @@ class DoubleBufferQueue(Generic[T]):
 
         self._queues[0].stop()
         self._queues[1].stop()
-        self._swap_thread.join()
+        self._swap_thread.join() if self._swap_thread.is_alive() else None
+        self.logger.info("DoubleBufferQueue stopped")
 
     @property
     def metrics(self) -> Dict[str, Any]:

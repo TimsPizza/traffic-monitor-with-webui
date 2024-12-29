@@ -88,10 +88,14 @@ class DynamicQueue(Generic[T]):
     def __len__(self) -> int:
         with self._lock:
             return len(self.queue)
-        
+
     def empty(self) -> bool:
         with self._lock:
             return len(self.queue) == 0
+
+    def clear(self):
+        with self._lock:
+            self.queue.clear()
 
     @property
     def current_max_size(self) -> int:
@@ -103,8 +107,14 @@ class DynamicQueue(Generic[T]):
 
     def start(self):
         self.not_full.set()
+        self._shrink_monitor.daemon = True
+        self._metrics_monitor.daemon = True
         self._shrink_monitor.start()
         self._metrics_monitor.start()
+
+    @property
+    def is_running(self):
+        return not self.should_stop.is_set()
 
     def enqueue(self, item: T) -> bool:
         # Tries to put an item in the queue, if the queue is full, it returns False
@@ -173,7 +183,7 @@ class DynamicQueue(Generic[T]):
     def _metrics_monitor_loop(self):
         while not self.should_stop.is_set():
             self._update_metrics()
-            time.sleep(1.0)
+            time.sleep(2.0)
 
     def _resize_queue(self, increase: bool):
         self.logger.info(f"{'Expanding' if increase else 'Shrinking'} queue")
@@ -196,8 +206,12 @@ class DynamicQueue(Generic[T]):
     def _handle_shutdown(self, signum, frame):
         self.logger.info("Shutting down the queue")
         self.should_stop.set()
-        self._shrink_monitor.join()
-        self._metrics_monitor.join()
+        if hasattr(self, "_shrink_monitor") and self._shrink_monitor:
+            if self._shrink_monitor.is_alive():
+                self._shrink_monitor.join()
+        if hasattr(self, "_metrics_monitor") and self._metrics_monitor:
+            if self._metrics_monitor.is_alive():
+                self._metrics_monitor.join()
         with self._lock:
             remaining = len(self.queue)
             self.queue.clear()

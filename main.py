@@ -1,15 +1,17 @@
+from hmac import new
+import signal
+from typing import List
 import uvicorn
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import Depends, FastAPI, BackgroundTasks
 from fastapi.logger import logger
 from contextlib import asynccontextmanager
 from scapy.all import Ether, IP, TCP
 import os
 import sys
 
-from packet.PacketConsumer import PacketConsumer
-from packet.Packet import CapturedPacket
-from packet.PacketProducer import PacketProducer
-from utils.DoubleBufferQueue import DoubleBufferQueue
+from models import CaptureFilterRecord
+from packet import PacketAnalyzer
+from utils import BPFUtils
 
 
 @asynccontextmanager
@@ -22,40 +24,73 @@ async def life_span(app: FastAPI):
 app = FastAPI(lifespan=life_span)
 
 
+def get_packet_analyzer():
+    analyzer = PacketAnalyzer(
+        buffer_min_size=256,
+        buffer_max_size=8192,
+        consumer_max_workers=4,
+        consumer_batch_size=256,
+        capture_interface="eth0",
+    )
+    try:
+        yield analyzer
+    finally:
+        if analyzer.is_running:
+            analyzer.stop()
+
+
 @app.get("/")
 async def read_root():
     return {"Hello": "World"}
 
 
-def start_sniffing(filter_rule):
-    double_buffer_queue = DoubleBufferQueue[CapturedPacket]()
-    producer = PacketProducer(double_buffer_queue, interface="eth0", filter=None)
-    consumer = PacketConsumer(double_buffer_queue, max_workers=8, batch_size=128)
-    double_buffer_queue.start()
-    producer.start()
-    consumer.start()
-
-
-@app.get("/start_capture")
-def start_capture(
-    background_tasks: BackgroundTasks, src_ip: str = None, port: int = None
+@app.post("/start_capture")
+async def start_capture(
+    background_tasks: BackgroundTasks,
+    analyzer: PacketAnalyzer = Depends(get_packet_analyzer),
 ):
-    filter_rule = "tcp and (dst port 22 or dst port 23 or dst port 80 or dst port 443 or dst port 8080 or dst port 9000 or dst port 1026)"
-    if src_ip:
-        filter_rule += f"src host {src_ip} "
-    if port:
-        if filter_rule:
-            filter_rule += "and "
-        filter_rule += f"port {port}"
+    async def start_analysis():
+        analyzer.start()
 
-    if not filter_rule:
-        filter_rule = "tcp"  # 默认过滤所有 TCP 包
-
-    background_tasks.add_task(start_sniffing, filter_rule)
-    return {"status": "Capturing started with filter:", "filter": filter_rule}
+    background_tasks.add_task(start_analysis)
+    return {"status": "Capture started"}
 
 
-# Add at the start of your main.py
+@app.get("/capture/config/filter", response_model=List[CaptureFilterRecord])
+async def get_all_filter(analyzer: PacketAnalyzer = Depends(get_packet_analyzer)):
+    filter = analyzer._packet_producer._filter
+    if not filter:
+        return []
+    resp = BPFUtils.parse_filter_expression(filter)
+    return resp
+
+
+@app.post("/capture/config/filter", response_model=List[CaptureFilterRecord])
+async def set_filter(
+    filter_records: List[CaptureFilterRecord],
+    analyzer: PacketAnalyzer = Depends(get_packet_analyzer),
+):
+    filter = BPFUtils.build_filter_expression(filter_records)
+    analyzer._packet_producer.apply_filter(filter)
+    return filter_records
+
+
+@app.get("/status")
+async def get_status(analyzer: PacketAnalyzer = Depends(get_packet_analyzer)):
+    return {
+        "running": analyzer.is_running,
+        "metrics": {
+            "consumer": analyzer._packet_consumer._metrics,
+            "producer": analyzer._packet_producer._metrics,
+        },
+    }
+
+
+@app.post("/stop")
+async def stop_capture(analyzer: PacketAnalyzer = Depends(get_packet_analyzer)):
+    if analyzer.is_running:
+        analyzer.stop()
+    return {"status": "Capture stopped"}
 
 
 def check_root():
@@ -68,4 +103,5 @@ def check_root():
 
 if __name__ == "__main__":
     check_root()
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000)
+    # uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

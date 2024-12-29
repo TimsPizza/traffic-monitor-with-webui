@@ -1,3 +1,4 @@
+import time
 from typing import Callable, Optional
 import netifaces
 import pcap
@@ -12,7 +13,11 @@ class PacketCapturer:
             raise ValueError(f"Interface {self.interface} does not exist")
 
         self._pcap = pcap.pcap(name=interface, promisc=True, immediate=True)
+        self._pcap.setnonblock(True)
+        self._batch_size = 128  # Process packets in small batches
+
         self._stop_event = Event()
+        self._stop_event.set()
         self._capture_thread: Thread = Thread(target=self._capture_loop)
         self._callback: Optional[Callable] = None
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -30,39 +35,46 @@ class PacketCapturer:
         self._callback = callback
         self.logger.info(f"Callback registered:{callback}")
 
-    def start_capture(self) -> None:
+    def start(self) -> None:
         """Start packet capture in separate thread"""
+        self._stop_event.clear()
         self._capture_thread.daemon = True
         self._capture_thread.start()
         self.logger.info(
             f"Capture started with filter: {self._pcap.filter}, listening on interface: {self.interface}"
         )
 
-    def stop_capture(self) -> None:
+    @property
+    def is_running(self):
+        return not self._stop_event.is_set()
+
+    def stop(self) -> None:
         """Stop packet capture"""
         self._stop_event.set()
-        if self._capture_thread:
+        if self._capture_thread and self._capture_thread.is_alive():
             self._capture_thread.join(timeout=5.0)
         self._pcap.close()
 
     def _capture_loop(self) -> None:
-        """Main capture loop"""
-        try:
-            while not self._stop_event.is_set():
-                for timestamp, packet in self._pcap:
-                    if self._stop_event.is_set():
-                        break
-                    if self._callback:
-                        try:
-                            self._callback(packet, timestamp)
-                        except Exception as e:
-                            self.logger.error(f"Error in packet producer callback: {e}")
-        except Exception as e:
-            self.logger.error(f"Capture error: {e}")
+        """Non-blocking capture loop with batched processing"""
+
+        def _packet_handler(timestamp, packet, *args):
+            if not self._stop_event.is_set() and self._callback:
+                self._callback(packet, timestamp)
+
+        while not self._stop_event.is_set():
+            try:
+                # Process a batch of packets
+                n = self._pcap.dispatch(self._batch_size, _packet_handler)
+                if n == 0:  # No packets available
+                    time.sleep(0.001)  # Minimal sleep
+            except Exception as e:
+                self.logger.error(f"Capture error: {e}")
+                break
 
     def __enter__(self):
-        self.start_capture()
+        self.start()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.stop_capture()
+        self.stop()

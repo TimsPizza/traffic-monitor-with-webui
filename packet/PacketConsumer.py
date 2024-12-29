@@ -1,3 +1,4 @@
+from asyncio import futures
 import logging
 from statistics import mean
 from threading import Event, Lock
@@ -6,22 +7,29 @@ from typing import List
 from scapy.all import Ether
 
 from packet.Packet import CapturedPacket
-from utils.DoubleBufferQueue import DoubleBufferQueue
+from utils import DoubleBufferQueue
 from concurrent.futures import Future, ThreadPoolExecutor
 
-from utils.Interfaces import ConsumerMetrics
+from utils import ConsumerMetrics
 
 
 class PacketConsumer:
     def __init__(self, buffer, max_workers=4, batch_size=256):
+        if not buffer or not isinstance(buffer, DoubleBufferQueue):
+            raise ValueError("Invalid buffer provided")
+        if max_workers < 1:
+            raise ValueError("Invalid max_workers value")
+        if batch_size < 1:
+            raise ValueError("Invalid batch_size value")
         self._buffer: DoubleBufferQueue = buffer
         self._max_workers = max_workers
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
         self._min_batch_size = max(1, batch_size // 2)
-        self._max_batch_size = batch_size * 2
+        self._max_batch_size = batch_size * 4
         self._current_batch_size = batch_size
-        self._max_wait_time = 1  # 1000ms
+        self._max_wait_time = 5  # max wait time for collecting a batch from the buffer
         self._stop_event = Event()
+        self._stop_event.set()
         self._lock = Lock()
         self._pending_tasks = 0
         self._metrics_lock = Lock()
@@ -45,11 +53,16 @@ class PacketConsumer:
         self.executor.submit(self._consume_loop)
         self.executor.submit(self._monitor_metrics)
 
+    @property
+    def is_running(self):
+        return not self._stop_event.is_set()
+
     def stop(self):
         self._stop_event.set()
         self.executor.shutdown(wait=True)
         self.logger.info("PacketConsumer stopped")
         self._log_final_metrics()
+        self.logger.info("Consumer stopped")
 
     def _submit_task(self, func, *args, **kwargs):
         """对外提交任务的方法"""
@@ -70,11 +83,14 @@ class PacketConsumer:
             start_wait = time.time()
             batch = self._read_batch_from_queue(self._current_batch_size)
             wait_time = time.time() - start_wait
-
+            self.logger.info(
+                f"Read batch of {len(batch)} packets in {wait_time:.2f} seconds"
+            )
             if batch:
                 self._update_wait_metrics(wait_time)
                 self._process_batch(batch)
                 self._adjust_batch_size(wait_time, len(batch))
+            self._stop_event.wait(0.05)
 
     def _read_batch_from_queue(self, batch_size) -> List[CapturedPacket]:
         """batch read with timeout support"""
@@ -94,19 +110,21 @@ class PacketConsumer:
 
     def _process_batch(self, batch: List[CapturedPacket]):
         start_time = time.time()
+        task_future = None
         try:
             if self._should_accept_more_tasks():
-                self._submit_task(self._process_batch_executor, batch)
+                task_future = self._submit_task(self._process_batch_executor, batch)
                 self.logger.info(
                     f"Submitted batch of {len(batch)} packets for processing"
                 )
             else:
                 self.logger.warning("Thread pool saturated, implementing backpressure")
 
+            if task_future:
+                task_future.result()
+            # self._update_processing_metrics(time.time() - start_time, len(batch))
         except Exception as e:
             self.logger.error(f"Error batch processing packet: {e}")
-
-        self._update_processing_metrics(time.time() - start_time, len(batch))
 
     def _process_batch_executor(self, batch: List[CapturedPacket]):
         if not batch:
