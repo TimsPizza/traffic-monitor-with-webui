@@ -23,7 +23,7 @@ class PacketConsumer:
             raise ValueError("Invalid batch_size value")
         self._buffer: DoubleBufferQueue = buffer
         self._max_workers = max_workers
-        self.executor = ThreadPoolExecutor(max_workers=max_workers)
+        self.executor: ThreadPoolExecutor = None
         self._min_batch_size = max(1, batch_size // 2)
         self._max_batch_size = batch_size * 4
         self._current_batch_size = batch_size
@@ -49,6 +49,7 @@ class PacketConsumer:
 
     def start(self):
         self._stop_event.clear()
+        self.executor = ThreadPoolExecutor(max_workers=self._max_workers)
         self.logger.info("PacketConsumer started")
         self.executor.submit(self._consume_loop)
         self.executor.submit(self._monitor_metrics)

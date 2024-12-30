@@ -1,14 +1,13 @@
 from collections import deque
 from threading import Lock, Thread, Event
 import logging
-from typing import Dict, Generic, Optional, TypeVar, Union
+from typing import Dict, Generic, List, Optional, TypeVar, Union
 import signal
 import time
 
-from utils.Interfaces import (
-    DynamicQueueResizeStrategy,
-    BaseDynamicQueueResizeStrategy,
-)
+from utils.Interfaces import BaseDynamicQueueResizeStrategy
+from utils.Strategy import DynamicQueueResizeStrategy
+
 
 T = TypeVar("T")
 
@@ -54,20 +53,18 @@ class DynamicQueue(Generic[T]):
         self.not_full = Event()
         self.should_stop = Event()
         # expand is only triggered by 'put', shrink depends on both size and elapsed time
-        self._shrink_monitor = Thread(target=self._shrink_monitor_loop)
-        self._metrics_monitor = Thread(target=self._metrics_monitor_loop)
-
-        self.stats: Dict[str, int] = {
+        self._shrink_monitor = None
+        self._metrics_monitor = None
+        self._metrics_update_interval = 2.0  # seconds
+        self._avg_loads: List[float] = []  # average load per minute
+        self._metrics: Dict[str, Union[int, float]] = {
             "enqueued": 0,
             "dequeued": 0,
             "dropped": 0,
             "resize_count": 0,
-        }
-
-        self._metrics: Dict[str, Union[int, float]] = {
-            "peak_queue_size": 0,
+            "peak_queue_length": 0,
+            "current_queue_max_size": 0,
             "resize_frequency": 0.0,
-            "total_processed_items": 0,
             "avg_load": 0.0,
         }
 
@@ -107,10 +104,27 @@ class DynamicQueue(Generic[T]):
 
     def start(self):
         self.not_full.set()
+        self._shrink_monitor = Thread(target=self._shrink_monitor_loop)
+        self._metrics_monitor = Thread(target=self._metrics_monitor_loop)
         self._shrink_monitor.daemon = True
         self._metrics_monitor.daemon = True
         self._shrink_monitor.start()
         self._metrics_monitor.start()
+
+    def stop(self):
+        self.logger.info("Shutting down the queue")
+        self.should_stop.set()
+        if hasattr(self, "_shrink_monitor") and self._shrink_monitor:
+            if self._shrink_monitor.is_alive():
+                self._shrink_monitor.join()
+        if hasattr(self, "_metrics_monitor") and self._metrics_monitor:
+            if self._metrics_monitor.is_alive():
+                self._metrics_monitor.join()
+        with self._lock:
+            remaining = len(self.queue)
+            self.queue.clear()
+            if remaining > 0:
+                self.logger.warning(f"Dropping {remaining} unprocessed items")
 
     @property
     def is_running(self):
@@ -121,12 +135,12 @@ class DynamicQueue(Generic[T]):
         try:
             with self._lock:
                 if len(self.queue) >= self.queue.maxlen:
-                    self.stats["dropped"] += 1
+                    self._metrics["dropped"] += 1
                     self.not_full.clear()
                     return False
 
                 self.queue.append(item)
-                self.stats["enqueued"] += 1
+                self._metrics["enqueued"] += 1
                 self._operation_batch_counter += 1
                 self.not_empty.set()
                 len_after_put = len(self.queue)
@@ -137,7 +151,7 @@ class DynamicQueue(Generic[T]):
         except Exception as e:
             self.logger.error(f"Error in 'put': {e}, item: {item}")
             with self._lock:
-                self.stats["dropped"] += 1
+                self._metrics["dropped"] += 1
             return False
 
     def popleft(self) -> Optional[T]:
@@ -147,7 +161,7 @@ class DynamicQueue(Generic[T]):
 
             item = self.queue.popleft()
             self._operation_batch_counter += 1
-            self.stats["dequeued"] += 1
+            self._metrics["dequeued"] += 1
         return item
 
     def peek(self) -> Optional[T]:
@@ -160,14 +174,6 @@ class DynamicQueue(Generic[T]):
         # Returns a copy of the metrics
         with self._metrics_lock:
             return self._metrics.copy()
-
-    def get_stats(self) -> Dict[str, int]:
-        # Returns a copy of the stats
-        with self._lock:
-            return self.stats.copy()
-
-    def stop(self):
-        self._handle_shutdown(None, None)
 
     def _shrink_monitor_loop(self):
         while not self.should_stop.is_set():
@@ -183,7 +189,7 @@ class DynamicQueue(Generic[T]):
     def _metrics_monitor_loop(self):
         while not self.should_stop.is_set():
             self._update_metrics()
-            time.sleep(2.0)
+            time.sleep(self._metrics_update_interval)
 
     def _resize_queue(self, increase: bool):
         self.logger.info(f"{'Expanding' if increase else 'Shrinking'} queue")
@@ -198,25 +204,10 @@ class DynamicQueue(Generic[T]):
             with self._lock:
                 new_queue = deque(self.queue, maxlen=new_max)
                 self.queue = new_queue
-                self.stats["resize_count"] += 1
+                self._metrics["resize_count"] += 1
             self.logger.info(
                 f"Queue {'shrinked' if new_max < current_max else 'expanded'} from {current_max} to {new_max}"
             )
-
-    def _handle_shutdown(self, signum, frame):
-        self.logger.info("Shutting down the queue")
-        self.should_stop.set()
-        if hasattr(self, "_shrink_monitor") and self._shrink_monitor:
-            if self._shrink_monitor.is_alive():
-                self._shrink_monitor.join()
-        if hasattr(self, "_metrics_monitor") and self._metrics_monitor:
-            if self._metrics_monitor.is_alive():
-                self._metrics_monitor.join()
-        with self._lock:
-            remaining = len(self.queue)
-            self.queue.clear()
-            if remaining > 0:
-                self.logger.warning(f"Dropping {remaining} unprocessed items")
 
     def _update_metrics(self):
         with self._metrics_lock:
@@ -225,12 +216,24 @@ class DynamicQueue(Generic[T]):
                     return
                 self._operation_batch_counter = 0
                 current_size = len(self.queue)
-                resize_count = self.stats["resize_count"]
-            self._metrics["total_processed_items"] += self.process_batch_size
-            self._metrics["peak_queue_size"] = max(
-                self._metrics["peak_queue_size"], current_size
+                resize_count = self._metrics["resize_count"]
+                current_max = self.current_max_size
+                self._metrics["current_queue_max_size"] = self.current_max_size
+                # calculate average load per minute
+            if len(self._avg_loads) > 60.0 // self._metrics_update_interval:
+                self._avg_loads.pop(0)
+            self._avg_loads.append(current_size / current_max if current_max > 0 else 0)
+            self._metrics["peak_queue_length"] = max(
+                self._metrics["peak_queue_length"], current_size
             )
             elapsed_time = time.time() - self._start_time
             self._metrics["resize_frequency"] = (
                 resize_count / elapsed_time if elapsed_time > 0 else 0
             )
+            self._metrics["avg_load"] = (
+                sum(self._avg_loads) / len(self._avg_loads)
+                if len(self._avg_loads) > 0
+                else 0
+            )
+
+            self.logger.info(f"Metrics updated: {self._metrics}")

@@ -24,9 +24,12 @@ class PacketProducer:
         self.logger.setLevel(logging.INFO)
 
     def start(self):
-        self._capturer.register_callback(self._on_packet_captured)
-        self._capturer.start()
-        self.logger.info(f"Producer started at {time.time()}")
+        try:
+            self._capturer.register_callback(self._on_packet_captured)
+            self._capturer.start()
+            self.logger.info(f"Producer started at {time.time()}")
+        except Exception as e:
+            self.logger.error(f"Error in 'start': {e}")
 
     @property
     def is_running(self):
@@ -48,14 +51,8 @@ class PacketProducer:
 
     def _on_packet_captured(self, packet: bytes, timestamp: float):
         self.captured_packets_count += 1
-        # push raw packet to avoid unnecessary parsing leading to data loss
+        # push raw packet to avoid unnecessary parsing leading to packet loss
         self._enqueue_packet(CapturedPacket(packet, timestamp))
-        # self.logger.info(
-        #     f"{self.captured_packets_count}th Packet: {scapy_packet.summary()} captured at {timestamp}, "
-        #     f"Protocol: {scapy_packet.proto if hasattr(scapy_packet, 'proto') else 'N/A'}, "
-        #     f"Source: {scapy_packet.src if hasattr(scapy_packet, 'src') else 'N/A'}, "
-        #     f"Destination Port: {scapy_packet.dport if hasattr(scapy_packet, 'dport') else 'N/A'}"
-        # )
 
     def _enqueue_packet(self, packet):
         self._buffer.enqueue(packet)

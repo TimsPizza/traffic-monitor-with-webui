@@ -5,9 +5,13 @@ from .Interfaces import (
     BaseBatchConsumer,
     DataProcessor,
     BufferStrategy,
+)
+
+from utils.Strategy import (
     ConsumerMetrics,
     ProducerMetrics,
     SizeBasedStrategy,
+    DynamicQueueResizeStrategy,
 )
 
 __all__ = [
@@ -20,4 +24,5 @@ __all__ = [
     "ConsumerMetrics",
     "ProducerMetrics",
     "SizeBasedStrategy",
+    "DynamicQueueResizeStrategy",
 ]

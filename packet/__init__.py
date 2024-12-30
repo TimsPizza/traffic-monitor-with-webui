@@ -1,9 +1,9 @@
-from .Packet import CapturedPacket
-from .PacketCapturer import PacketCapturer
-from .PacketConsumer import PacketConsumer
-from .PacketProducer import PacketProducer
-from .PacketAnalyzer import PacketAnalyzer
-from .PacketFilter import PacketFilter
+from packet.Packet import CapturedPacket
+from packet.PacketCapturer import PacketCapturer
+from packet.PacketConsumer import PacketConsumer
+from packet.PacketProducer import PacketProducer
+from packet.PacketAnalyzer import PacketAnalyzer
+from packet.PacketFilter import PacketFilter
 
 __all__ = [
     "CapturedPacket",

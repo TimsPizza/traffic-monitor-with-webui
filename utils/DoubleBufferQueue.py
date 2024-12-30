@@ -3,10 +3,9 @@ from threading import Thread, Lock, Event
 import logging
 import time
 from threading import RLock
-import threading
 
-from . import DynamicQueue
-from utils import BufferStrategy, SizeBasedStrategy
+from .DynamicQueue import DynamicQueue
+from .Strategy import BufferStrategy, SizeBasedStrategy
 
 T = TypeVar("T")
 
@@ -37,6 +36,7 @@ class DoubleBufferQueue(Generic[T]):
                 queue_id="2",
             ),
         )
+        
         self.max_size = max_size
         self.min_size = min_size
         self._active_index = 0
@@ -49,7 +49,7 @@ class DoubleBufferQueue(Generic[T]):
         self._swap_event = Event()
         self._stop_event = Event()
         self._stop_event.set()
-        self._swap_thread = Thread(target=self._swap_monitor_by_time_loop)
+        self._swap_thread = None
         self._active_queue_avg_loads: List[float] = []
         self._processing_queue_avg_loads: List[float] = []
         # Metrics
@@ -72,63 +72,10 @@ class DoubleBufferQueue(Generic[T]):
     def _processing_queue(self) -> DynamicQueue:
         return self._queues[1 - self._active_index]
 
-    def enqueue(self, item: T) -> bool:
-        """Add item to active queue"""
-        success = self._active_queue.enqueue(item)
-
-        if not success:
-            with self._metrics_lock:
-                self._metrics["total_dropped"] += 1
-            return False
-
-        if self._strategy and self._strategy.should_swap(
-            current_size=len(self._active_queue),
-            max_size=self._active_queue.current_max_size,
-        ):
-            # self._swap_event.set()
-            self.logger.info("Swap event triggered")
-            self._swap_buffers()
-        return True
-
-    def popleft(self) -> Optional[T]:
-        """Pop item from processing queue"""
-        try:
-            if not self._processing_queue.empty():
-                item = self._processing_queue.popleft()
-            else:
-                # dynamic queue expand first, this is to prevent consumer from waiting on the empty processing-queue
-                item = self._active_queue.popleft()
-                if item:
-                    with self._metrics_lock:
-                        self._metrics["total_processed"] += 1
-            return item if item else None
-        except Exception as e:
-            self.logger.error(f"Error in 'popleft': {e}")
-            return None
-
-    def _swap_monitor_by_time_loop(self) -> None:
-        while not self._stop_event.is_set():
-            self.logger.info("Waiting for swap event")
-            self._swap_event.wait()
-            self._swap_buffers()
-            self._swap_event.clear()
-
-    def _swap_buffers(self) -> None:
-        """Swap active and processing queues using atomic index swap"""
-        with self._index_lock:
-            self._active_index = 1 - self._active_index
-
-        with self._metrics_lock:
-            self._metrics["swap_count"] += 1
-            self._metrics["last_swap_time"] = time.time()
-
-        if self._strategy:
-            self._strategy.on_swap()
-        self.logger.info("Swapped queues")
-
     def start(self) -> None:
         """Start processing"""
         self._stop_event.clear()
+        self._swap_thread = Thread(target=self._swap_monitor_by_time_loop)
         self._swap_thread.daemon = True
         self._swap_thread.start()
         self._queues[0].clear()
@@ -149,8 +96,75 @@ class DoubleBufferQueue(Generic[T]):
 
         self._queues[0].stop()
         self._queues[1].stop()
-        self._swap_thread.join() if self._swap_thread.is_alive() else None
+        if self._swap_thread and self._swap_thread.is_alive():
+            self._swap_thread.join()
         self.logger.info("DoubleBufferQueue stopped")
+
+    def enqueue(self, item: T) -> bool:
+        """Add item to active queue"""
+        success = self._active_queue.enqueue(item)
+
+        if not success:
+            with self._metrics_lock:
+                self._metrics["total_dropped"] += 1
+            return False
+
+        if self._strategy and self._strategy.should_swap(
+            current_size=len(self._active_queue),
+            max_size=self._active_queue.current_max_size,
+        ):
+            self._swap_event.set()
+            self.logger.info("Swap event triggered")
+        return True
+
+    def popleft(self) -> Optional[T]:
+        """Pop item from processing queue"""
+        try:
+            if not self._processing_queue.empty():
+                item = self._processing_queue.popleft()
+            else:
+                # dynamic queue expand first, this is to prevent consumer from waiting on the empty processing-queue
+                item = self._active_queue.popleft()
+                if item:
+                    with self._metrics_lock:
+                        self._metrics["total_processed"] += 1
+            return item if item else None
+        except Exception as e:
+            self.logger.error(f"Error in 'popleft': {e}")
+            return None
+
+    def _swap_monitor_by_time_loop(self) -> None:
+        """Monitor loop for buffer swapping with proper shutdown"""
+        while not self._stop_event.is_set():
+            try:
+                # Wait with timeout to allow checking stop event
+                if self._swap_event.wait(timeout=0.1):
+                    self.logger.info("Swap event triggered")
+                    self._swap_buffers()
+                    self._swap_event.clear()
+                else:
+                    # No swap needed, continue monitoring
+                    continue
+
+            except Exception as e:
+                self.logger.error(f"Error in swap monitor: {e}")
+                # Add small delay on error to prevent tight loop
+                time.sleep(0.1)
+
+        self.logger.info("Swap monitor stopped")
+
+    def _swap_buffers(self) -> None:
+        """Swap active and processing queues using atomic index swap"""
+        with self._index_lock:
+            self._active_index = 1 - self._active_index
+
+        with self._metrics_lock:
+            self._metrics["swap_count"] += 1
+            self._metrics["last_swap_time"] = time.time()
+
+        if self._strategy:
+            self._strategy.on_swap()
+        self.logger.info("Swapped queues")
 
     @property
     def metrics(self) -> Dict[str, Any]:

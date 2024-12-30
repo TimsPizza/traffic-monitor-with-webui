@@ -12,13 +12,12 @@ class PacketCapturer:
         if self.interface not in netifaces.interfaces():
             raise ValueError(f"Interface {self.interface} does not exist")
 
-        self._pcap = pcap.pcap(name=interface, promisc=True, immediate=True)
-        self._pcap.setnonblock(True)
+        self._pcap = None
         self._batch_size = 128  # Process packets in small batches
-
+        self._interface = interface
         self._stop_event = Event()
         self._stop_event.set()
-        self._capture_thread: Thread = Thread(target=self._capture_loop)
+        self._capture_thread: Thread = None
         self._callback: Optional[Callable] = None
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.setLevel(logging.INFO)
@@ -38,7 +37,9 @@ class PacketCapturer:
     def start(self) -> None:
         """Start packet capture in separate thread"""
         self._stop_event.clear()
-        self._capture_thread.daemon = True
+        self._pcap = pcap.pcap(name=self._interface, promisc=True, immediate=True)
+        self._pcap.setnonblock(True)
+        self._capture_thread = Thread(target=self._capture_loop)
         self._capture_thread.start()
         self.logger.info(
             f"Capture started with filter: {self._pcap.filter}, listening on interface: {self.interface}"
@@ -51,12 +52,13 @@ class PacketCapturer:
     def stop(self) -> None:
         """Stop packet capture"""
         self._stop_event.set()
-        if self._capture_thread and self._capture_thread.is_alive():
-            self._capture_thread.join(timeout=5.0)
-        self._pcap.close()
+        self._pcap.close() if self._pcap else None
+        self.logger.info(f"Capture stopped at {time.time()}")
 
     def _capture_loop(self) -> None:
         """Non-blocking capture loop with batched processing"""
+        if not self._pcap:
+            raise ValueError("Pcap object not initialized")
 
         def _packet_handler(timestamp, packet, *args):
             if not self._stop_event.is_set() and self._callback:

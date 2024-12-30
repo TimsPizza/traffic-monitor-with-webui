@@ -16,6 +16,7 @@ class PacketAnalyzer:
         consumer_batch_size: int = 256,
     ):
         self._stop_event = Event()
+        self._stop_event.set()
         self._double_buffer_queue: DoubleBufferQueue = DoubleBufferQueue[
             CapturedPacket
         ](
@@ -43,7 +44,12 @@ class PacketAnalyzer:
 
     @property
     def is_running(self):
-        return not self._stop_event.is_set()
+        return (
+            not self._stop_event.is_set()
+            or self._double_buffer_queue.is_running
+            or self._packet_consumer.is_running
+            or self._packet_producer.is_running
+        )
 
     def stop(self):
         self._stop_event.set()
