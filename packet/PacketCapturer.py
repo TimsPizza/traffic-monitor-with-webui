@@ -22,10 +22,19 @@ class PacketCapturer:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.setLevel(logging.INFO)
         if filter:
-            self.set_filter(filter)
+            self._cache_filter(filter)
+
+    def _cache_filter(self, filter: str) -> None:
+        """Cache packet filter before pcap object is initialized"""
+        self._filter = filter
+        self.logger.info(f"Filter cached: {filter}")
 
     def set_filter(self, filter: str) -> None:
         """Set packet filter"""
+        if self._stop_event.is_set():
+            self._cache_filter(filter)
+            self.logger.info(f"Filter cached: {filter}")
+            return
         self._pcap.setfilter(filter)
         self.logger.info(f"Filter set to: {filter}")
 
@@ -39,6 +48,10 @@ class PacketCapturer:
         self._stop_event.clear()
         self._pcap = pcap.pcap(name=self._interface, promisc=True, immediate=True)
         self._pcap.setnonblock(True)
+        if self._filter:
+            self.set_filter(self._filter)
+            self.logger.info(f"Using cached filter: {self._filter}")
+            
         self._capture_thread = Thread(target=self._capture_loop)
         self._capture_thread.start()
         self.logger.info(

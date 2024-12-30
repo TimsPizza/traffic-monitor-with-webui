@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 
 from models import CaptureFilterRecord
 from packet import PacketAnalyzer
-from utils import BpfUtils
+from utils import BPFUtils 
 from core.services import AnalyzerSingleton
 
 # TODO: add auth to this route
@@ -42,7 +42,7 @@ async def get_all_filter(analyzer: PacketAnalyzer = Depends(get_packet_analyzer)
     filter = analyzer._packet_producer._filter
     if not filter:
         return []
-    resp = BpfUtils.parse_filter_expression(filter)
+    resp = BPFUtils.parse_filter_expression(filter)
     return resp
 
 
@@ -51,7 +51,7 @@ async def set_filter(
     filter_records: List[CaptureFilterRecord],
     analyzer: PacketAnalyzer = Depends(get_packet_analyzer),
 ):
-    filter = BpfUtils.build_filter_expression(filter_records)
+    filter = BPFUtils.build_filter_expression(filter_records)
     analyzer._packet_producer.apply_filter(filter)
     return filter_records
 

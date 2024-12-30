@@ -46,7 +46,6 @@ class PacketProducer:
         self.logger.info(f"Producer restarted at {time.time()}")
 
     def apply_filter(self, filter):
-        # TODO: implement filter interface?
         self._capturer.set_filter(filter)
 
     def _on_packet_captured(self, packet: bytes, timestamp: float):
