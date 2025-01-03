@@ -36,7 +36,7 @@ class DoubleBufferQueue(Generic[T]):
                 queue_id="2",
             ),
         )
-        
+
         self.max_size = max_size
         self.min_size = min_size
         self._active_index = 0
@@ -114,20 +114,18 @@ class DoubleBufferQueue(Generic[T]):
             max_size=self._active_queue.current_max_size,
         ):
             self._swap_event.set()
-            self.logger.info("Swap event triggered")
+            self.logger.debug("Swap event triggered")
         return True
 
-    def popleft(self) -> Optional[T]:
+    def popleft(self, block: bool = False, timeout: Optional[float] = None) -> Optional[T]:
         """Pop item from processing queue"""
         try:
-            if not self._processing_queue.empty():
-                item = self._processing_queue.popleft()
-            else:
-                # dynamic queue expand first, this is to prevent consumer from waiting on the empty processing-queue
-                item = self._active_queue.popleft()
-                if item:
-                    with self._metrics_lock:
-                        self._metrics["total_processed"] += 1
+            # currently processing queue is somehow never used/swapped, so only pop from active queue.
+            # TODO: fix swap logic to use processing queue, if needed?
+            item = self._active_queue.popleft(block=block, timeout=timeout)
+            if item:
+                with self._metrics_lock:
+                    self._metrics["total_processed"] += 1
             return item if item else None
         except Exception as e:
             self.logger.error(f"Error in 'popleft': {e}")
@@ -139,7 +137,7 @@ class DoubleBufferQueue(Generic[T]):
             try:
                 # Wait with timeout to allow checking stop event
                 if self._swap_event.wait(timeout=0.1):
-                    self.logger.info("Swap event triggered")
+                    self.logger.debug("Swap event triggered")
                     self._swap_buffers()
                     self._swap_event.clear()
                 else:
@@ -151,7 +149,7 @@ class DoubleBufferQueue(Generic[T]):
                 # Add small delay on error to prevent tight loop
                 time.sleep(0.1)
 
-        self.logger.info("Swap monitor stopped")
+        self.logger.debug("Swap monitor stopped")
 
     def _swap_buffers(self) -> None:
         """Swap active and processing queues using atomic index swap"""

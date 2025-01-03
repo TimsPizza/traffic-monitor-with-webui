@@ -66,7 +66,7 @@ class PacketConsumer:
         self.logger.info("Consumer stopped")
 
     def _submit_task(self, func, *args, **kwargs):
-        """对外提交任务的方法"""
+        """submit a task to the executor and update pending tasks count"""
         with self._lock:
             self._pending_tasks += 1
 
@@ -75,7 +75,7 @@ class PacketConsumer:
         return future
 
     def _on_task_done(self, future: Future):
-        """任务完成回调，减少进行中的任务数"""
+        """reduce pending tasks count when task is done"""
         with self._lock:
             self._pending_tasks -= 1
 
@@ -100,7 +100,7 @@ class PacketConsumer:
         while (
             len(batch) < batch_size and (time.time() - start_time) < self._max_wait_time
         ):
-            packet = self._buffer.popleft()
+            packet = self._buffer.popleft(block=True, timeout=self._max_wait_time / 2)
             if packet:
                 batch.append(packet)
             elif len(batch) >= self._min_batch_size:
@@ -153,19 +153,19 @@ class PacketConsumer:
             return self._pending_tasks < self._max_workers
 
     def _adjust_batch_size(self, wait_time: float, actual_batch_size: int):
-        """动态调整批处理大小"""
+        """adjust batch size dynamically based on wait time and actual batch size"""
         if (
             wait_time < self._max_wait_time * 0.5
             and actual_batch_size >= self._current_batch_size
         ):
-            # 队列负载高，增加批量
+            # high load, increase batch size
             self._current_batch_size = min(
                 self._current_batch_size * 1.5, self._max_batch_size
             )
         elif (
             wait_time >= self._max_wait_time or actual_batch_size < self._min_batch_size
         ):
-            # 队列负载低，减少批量
+            # low load, decrease batch size
             self._current_batch_size = max(
                 self._current_batch_size * 0.8, self._min_batch_size
             )
@@ -207,16 +207,17 @@ class PacketConsumer:
         )
 
     def _monitor_metrics(self):
-        """定期监控和记录性能指标"""
+        """monitor performance metrics based on interval"""
+        # TODO: add more control options for monitoring?
         while not self._stop_event.is_set():
             current_time = time.time()
             if current_time - self._last_metrics_time >= self._metrics_interval:
                 self._log_metrics()
                 self._last_metrics_time = current_time
-            time.sleep(1)
+            time.sleep(5)
 
     def _log_metrics(self):
-        """记录性能指标"""
+        """log current performance metrics"""
         with self._metrics_lock:
             self.logger.info(
                 f"Consumer Metrics - "

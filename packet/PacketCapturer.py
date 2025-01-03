@@ -13,6 +13,7 @@ class PacketCapturer:
             raise ValueError(f"Interface {self.interface} does not exist")
 
         self._pcap = None
+        self._filter: str = None
         self._batch_size = 128  # Process packets in small batches
         self._interface = interface
         self._stop_event = Event()
@@ -51,7 +52,7 @@ class PacketCapturer:
         if self._filter:
             self.set_filter(self._filter)
             self.logger.info(f"Using cached filter: {self._filter}")
-            
+
         self._capture_thread = Thread(target=self._capture_loop)
         self._capture_thread.start()
         self.logger.info(

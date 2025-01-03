@@ -75,9 +75,7 @@ class DynamicQueueResizeStrategy(BaseDynamicQueueResizeStrategy):
         flag_size = current_size <= (
             max_size_after_shrink * self.shrink_threshold_ratio
         )
-        print(
-            f"checking shrink flags: flag_time: {flag_time}, flag_size: {flag_size}, overall: {flag_time and flag_size}"
-        )
+
         if flag_time and flag_size:
             self.on_shrink()
         return flag_time and flag_size
@@ -115,9 +113,11 @@ class ProducerMetrics:
 
 @dataclass
 class DynamicQueueMetrics:
-    total_processed: int = 0
-    total_dropped: int = 0
-    swap_count: int = 0
-    last_swap_time: float = 0.0
-    avg_process_time: float = 0.0
-    total_process_time: float = 0.0
+    enqueued: int = 0
+    dequeued: int = 0
+    dropped: int = 0.0
+    resize_count: int = 0.0
+    peak_queue_length: int = 0.0
+    current_queue_max_size: int = 0.0
+    resize_frequency: float = 0.0
+    avg_load: float = 0.0

@@ -1,13 +1,10 @@
-from collections import deque
+import queue
 from threading import Lock, Thread, Event
 import logging
-from typing import Dict, Generic, List, Optional, TypeVar, Union
-import signal
 import time
-
+from typing import Dict, Generic, List, Optional, TypeVar, Union
 from utils.Interfaces import BaseDynamicQueueResizeStrategy
-from utils.Strategy import DynamicQueueResizeStrategy
-
+from utils.Strategy import DynamicQueueMetrics, DynamicQueueResizeStrategy
 
 T = TypeVar("T")
 
@@ -19,7 +16,6 @@ class DynamicQueue(Generic[T]):
         max_size: int = 1e5,
         growth_factor: float = 1.5,
         shrink_factor: float = 0.5,
-        # specify batch size for resizing check
         process_batch_size: int = 10,
         strategy: BaseDynamicQueueResizeStrategy = None,
         queue_id: Optional[str] = None,
@@ -33,207 +29,176 @@ class DynamicQueue(Generic[T]):
             raise ValueError("Invalid queue size parameters")
         if growth_factor <= 1.0 or shrink_factor >= 1.0:
             raise ValueError("Invalid resize factors")
-        self.queue = deque(maxlen=min_size)
-        self.limit_max_size = max_size
-        self.limit_min_size = min_size
+
         self._strategy = strategy or DynamicQueueResizeStrategy(
             shrink_timeout_seconds=15.0,
             shrink_check_interval_seconds=5.0,
             shrink_factor=shrink_factor,
         )
+        self.limit_max_size = int(max_size)
+        self.limit_min_size = int(min_size)
         self.growth_factor = growth_factor
         self.shrink_factor = shrink_factor
         self.process_batch_size = process_batch_size
-        # includes put and pop operations. used to check if metrics update is needed
-        self._operation_batch_counter = 0
+        self._queue = queue.Queue(maxsize=int(min_size))
 
         self._lock = Lock()
         self._metrics_lock = Lock()
         self.not_empty = Event()
         self.not_full = Event()
         self.should_stop = Event()
-        # expand is only triggered by 'put', shrink depends on both size and elapsed time
         self._shrink_monitor = None
         self._metrics_monitor = None
-        self._metrics_update_interval = 2.0  # seconds
-        self._avg_loads: List[float] = []  # average load per minute
-        self._metrics: Dict[str, Union[int, float]] = {
-            "enqueued": 0,
-            "dequeued": 0,
-            "dropped": 0,
-            "resize_count": 0,
-            "peak_queue_length": 0,
-            "current_queue_max_size": 0,
-            "resize_frequency": 0.0,
-            "avg_load": 0.0,
-        }
-
+        self._metrics_update_interval = 5.0  # seconds
+        self._avg_loads: List[float] = []
+        self._metrics: DynamicQueueMetrics = DynamicQueueMetrics()
         self._start_time = time.time()
 
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(self.name)
 
-    # used for context manager
     def __enter__(self):
         self.start()
         return self
 
-    # used for context manager
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stop()
-
-    def __len__(self) -> int:
-        with self._lock:
-            return len(self.queue)
-
-    def empty(self) -> bool:
-        with self._lock:
-            return len(self.queue) == 0
-
-    def clear(self):
-        with self._lock:
-            self.queue.clear()
-
-    @property
-    def current_max_size(self) -> int:
-        return self.queue.maxlen
 
     @property
     def name(self) -> str:
         return self._name
 
+    def __len__(self) -> int:
+        return self._queue.qsize()
+
+    def empty(self) -> bool:
+        return self._queue.empty()
+
+    def clear(self):
+        with self._lock:
+            count = self._queue.qsize()
+            while not self._queue.empty():
+                self._queue.get_nowait()
+            if count > 0:
+                self.logger.debug(f"Cleared {count} items from the queue")
+
+    @property
+    def current_max_size(self) -> int:
+        # Use the queue's maxsize as current max
+        return self._queue.maxsize
+
     def start(self):
         self.not_full.set()
-        self._shrink_monitor = Thread(target=self._shrink_monitor_loop)
-        self._metrics_monitor = Thread(target=self._metrics_monitor_loop)
-        self._shrink_monitor.daemon = True
-        self._metrics_monitor.daemon = True
+        self._shrink_monitor = Thread(target=self._shrink_monitor_loop, daemon=True)
+        self._metrics_monitor = Thread(target=self._metrics_monitor_loop, daemon=True)
         self._shrink_monitor.start()
         self._metrics_monitor.start()
 
     def stop(self):
-        self.logger.info("Shutting down the queue")
+        self.logger.debug("Shutting down the queue")
         self.should_stop.set()
-        if hasattr(self, "_shrink_monitor") and self._shrink_monitor:
-            if self._shrink_monitor.is_alive():
-                self._shrink_monitor.join()
-        if hasattr(self, "_metrics_monitor") and self._metrics_monitor:
-            if self._metrics_monitor.is_alive():
-                self._metrics_monitor.join()
-        with self._lock:
-            remaining = len(self.queue)
-            self.queue.clear()
-            if remaining > 0:
-                self.logger.warning(f"Dropping {remaining} unprocessed items")
+        if self._shrink_monitor and self._shrink_monitor.is_alive():
+            self._shrink_monitor.join()
+        if self._metrics_monitor and self._metrics_monitor.is_alive():
+            self._metrics_monitor.join()
+        self.clear()
 
     @property
-    def is_running(self):
+    def is_running(self) -> bool:
         return not self.should_stop.is_set()
 
     def enqueue(self, item: T) -> bool:
-        # Tries to put an item in the queue, if the queue is full, it returns False
         try:
-            with self._lock:
-                if len(self.queue) >= self.queue.maxlen:
-                    self._metrics["dropped"] += 1
-                    self.not_full.clear()
-                    return False
-
-                self.queue.append(item)
-                self._metrics["enqueued"] += 1
-                self._operation_batch_counter += 1
-                self.not_empty.set()
-                len_after_put = len(self.queue)
-
-            if self._strategy.should_expand(len_after_put, self.current_max_size):
-                self._resize_queue(increase=True)
-            return True
-        except Exception as e:
-            self.logger.error(f"Error in 'put': {e}, item: {item}")
-            with self._lock:
-                self._metrics["dropped"] += 1
+            self._queue.put_nowait(item)
+            with self._metrics_lock:
+                self._metrics.enqueued += 1
+            self.not_empty.set()
+        except queue.Full:
+            with self._metrics_lock:
+                self._metrics.dropped += 1
+            self.not_full.clear()
             return False
 
-    def popleft(self) -> Optional[T]:
-        with self._lock:
-            if not self.queue:
-                return None
+        # Check if we need to expand
+        if self._strategy.should_expand(self._queue.qsize(), self.current_max_size):
+            self._resize_queue(increase=True)
+        return True
 
-            item = self.queue.popleft()
-            self._operation_batch_counter += 1
-            self._metrics["dequeued"] += 1
-        return item
+    def popleft(
+        self, block: bool = False, timeout: Optional[float] = None
+    ) -> Optional[T]:
+        try:
+            item = self._queue.get(block=block, timeout=timeout)
+            with self._metrics_lock:
+                self._metrics.dequeued += 1
+            return item
+        except queue.Empty:
+            return None
 
     def peek(self) -> Optional[T]:
+        # NOTE: This usage accesses the underlying queue list, which is not strictly safe,
+        # but it's necessary to preserve "peek" functionality. Use with caution.
         with self._lock:
-            if not self.queue:
+            if self._queue.empty():
                 return None
-            return self.queue[0]
+            return self._queue.queue[0]
 
     def get_metrics(self) -> Dict[str, float]:
-        # Returns a copy of the metrics
         with self._metrics_lock:
-            return self._metrics.copy()
+            return self._metrics.__dict__.copy()
 
     def _shrink_monitor_loop(self):
-        while not self.should_stop.is_set():
+        while not self.should_stop.wait(self._strategy.shrink_check_interval):
             with self._lock:
-                queue_len = len(self.queue)
+                queue_len = self._queue.qsize()
             should_shrink = self._strategy.should_shrink(queue_len)
-            self.logger.info(f"{self.name}: Should shrink: {should_shrink}")
+            self.logger.debug(f"{self.name}: Should shrink: {should_shrink}")
             if should_shrink:
                 self._resize_queue(increase=False)
-            # wait for a while before checking again to reduce overhead
-            time.sleep(self._strategy.shrink_check_interval)
 
     def _metrics_monitor_loop(self):
-        while not self.should_stop.is_set():
+        while not self.should_stop.wait(self._metrics_update_interval):
             self._update_metrics()
-            time.sleep(self._metrics_update_interval)
 
     def _resize_queue(self, increase: bool):
-        self.logger.info(f"{'Expanding' if increase else 'Shrinking'} queue")
+        self.logger.debug(f"{'Expanding' if increase else 'Shrinking'} queue")
         with self._lock:
-            current_max = self.current_max_size
+            current_max = self._queue.maxsize
         if increase:
             new_max = min(int(current_max * self.growth_factor), self.limit_max_size)
         else:
             new_max = max(int(current_max * self.shrink_factor), self.limit_min_size)
-        self.logger.info(f"New max size: {new_max}, current max size: {current_max}")
+        self.logger.debug(f"New max size: {new_max}, current max size: {current_max}")
+
         if new_max != current_max:
             with self._lock:
-                new_queue = deque(self.queue, maxlen=new_max)
-                self.queue = new_queue
-                self._metrics["resize_count"] += 1
-            self.logger.info(
-                f"Queue {'shrinked' if new_max < current_max else 'expanded'} from {current_max} to {new_max}"
+                self._queue.maxsize = new_max
+                self._metrics.resize_count += 1
+            self.logger.debug(
+                f"Queue {'shrinked' if new_max < current_max else 'expanded'} "
+                f"from {current_max} to {new_max}"
             )
 
     def _update_metrics(self):
         with self._metrics_lock:
-            with self._lock:
-                if self._operation_batch_counter < self.process_batch_size:
-                    return
-                self._operation_batch_counter = 0
-                current_size = len(self.queue)
-                resize_count = self._metrics["resize_count"]
-                current_max = self.current_max_size
-                self._metrics["current_queue_max_size"] = self.current_max_size
-                # calculate average load per minute
+            queue_len = self._queue.qsize()
+            current_max = self._queue.maxsize
+            resize_count = self._metrics.resize_count
+            self._metrics.current_queue_max_size = current_max
+
             if len(self._avg_loads) > 60.0 // self._metrics_update_interval:
                 self._avg_loads.pop(0)
-            self._avg_loads.append(current_size / current_max if current_max > 0 else 0)
-            self._metrics["peak_queue_length"] = max(
-                self._metrics["peak_queue_length"], current_size
+
+            self._avg_loads.append(queue_len / current_max if current_max > 0 else 0)
+            self._metrics.peak_queue_length = max(
+                self._metrics.peak_queue_length, queue_len
             )
             elapsed_time = time.time() - self._start_time
-            self._metrics["resize_frequency"] = (
+            self._metrics.resize_frequency = (
                 resize_count / elapsed_time if elapsed_time > 0 else 0
             )
-            self._metrics["avg_load"] = (
+            self._metrics.avg_load = (
                 sum(self._avg_loads) / len(self._avg_loads)
                 if len(self._avg_loads) > 0
                 else 0
             )
-
-            self.logger.info(f"Metrics updated: {self._metrics}")
