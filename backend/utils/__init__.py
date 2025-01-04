@@ -5,11 +5,11 @@ from .Interfaces import (
     BaseBatchConsumer,
     DataProcessor,
     BufferStrategy,
+    ConsumerMetrics,
+    ProducerMetrics,
 )
 
 from utils.Strategy import (
-    ConsumerMetrics,
-    ProducerMetrics,
     SizeBasedStrategy,
     DynamicQueueResizeStrategy,
 )

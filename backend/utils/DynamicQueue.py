@@ -3,8 +3,9 @@ from threading import Lock, Thread, Event
 import logging
 import time
 from typing import Dict, Generic, List, Optional, TypeVar, Union
-from utils.Interfaces import BaseDynamicQueueResizeStrategy
-from utils.Strategy import DynamicQueueMetrics, DynamicQueueResizeStrategy
+from .Interfaces import BaseDynamicQueueResizeStrategy
+from .Interfaces import DynamicQueueMetrics
+from .Strategy import DynamicQueueResizeStrategy
 
 T = TypeVar("T")
 

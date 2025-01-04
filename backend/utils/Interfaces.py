@@ -72,3 +72,32 @@ class BaseDynamicQueueResizeStrategy(ABC):
     @abstractmethod
     def on_shrink(self) -> None:
         pass
+    
+@dataclass
+class ConsumerMetrics:
+    avg_batch_size: float = 0
+    avg_wait_time: float = 0
+    processing_delay: float = 0
+    processed_packets: int = 0
+
+
+@dataclass
+class ProducerMetrics:
+    total_dropped: int = 0
+    total_processed: int = 0
+    swap_count: int = 0
+    last_swap_time: float = 0.0
+    avg_process_time: float = 0.0
+    total_process_time: float = 0.0
+
+
+@dataclass
+class DynamicQueueMetrics:
+    enqueued: int = 0
+    dequeued: int = 0
+    dropped: int = 0.0
+    resize_count: int = 0.0
+    peak_queue_length: int = 0.0
+    current_queue_max_size: int = 0.0
+    resize_frequency: float = 0.0
+    avg_load: float = 0.0

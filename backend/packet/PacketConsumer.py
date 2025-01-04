@@ -1,10 +1,9 @@
-from asyncio import futures
 import logging
 from statistics import mean
 from threading import Event, Lock
 import time
 from typing import List
-from scapy.all import Ether
+from scapy.all import Ether, IP, TCP
 
 from packet.Packet import CapturedPacket
 from utils import DoubleBufferQueue
@@ -21,20 +20,23 @@ class PacketConsumer:
             raise ValueError("Invalid max_workers value")
         if batch_size < 1:
             raise ValueError("Invalid batch_size value")
-        self._buffer: DoubleBufferQueue = buffer
         self._max_workers = max_workers
+        self._buffer: DoubleBufferQueue = buffer
         self.executor: ThreadPoolExecutor = None
+        
+        
         self._min_batch_size = max(1, batch_size // 2)
         self._max_batch_size = batch_size * 4
         self._current_batch_size = batch_size
         self._max_wait_time = 5  # max wait time for collecting a batch from the buffer
+        
         self._stop_event = Event()
         self._stop_event.set()
         self._lock = Lock()
         self._pending_tasks = 0
         self._metrics_lock = Lock()
 
-        # 性能指标
+        # metrics
         self._metrics = ConsumerMetrics()
         self._batch_sizes = []
         self._wait_times = []
@@ -43,8 +45,8 @@ class PacketConsumer:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.setLevel(logging.INFO)
 
-        # 监控间隔
-        self._metrics_interval = 5  # 5秒
+        # metrics update interval
+        self._metrics_interval = 5  # 5 seconds
         self._last_metrics_time = time.time()
 
     def start(self):
@@ -80,18 +82,17 @@ class PacketConsumer:
             self._pending_tasks -= 1
 
     def _consume_loop(self):
-        while not self._stop_event.is_set():
+        while not self._stop_event.wait(0.05):
             start_wait = time.time()
             batch = self._read_batch_from_queue(self._current_batch_size)
             wait_time = time.time() - start_wait
             self.logger.info(
                 f"Read batch of {len(batch)} packets in {wait_time:.2f} seconds"
             )
-            if batch:
+            if len(batch) > 0:
                 self._update_wait_metrics(wait_time)
                 self._process_batch(batch)
                 self._adjust_batch_size(wait_time, len(batch))
-            self._stop_event.wait(0.05)
 
     def _read_batch_from_queue(self, batch_size) -> List[CapturedPacket]:
         """batch read with timeout support"""
@@ -113,13 +114,13 @@ class PacketConsumer:
         start_time = time.time()
         task_future = None
         try:
-            if self._should_accept_more_tasks():
+            if self._can_accept_more_tasks():
                 task_future = self._submit_task(self._process_batch_executor, batch)
                 self.logger.info(
-                    f"Submitted batch of {len(batch)} packets for processing"
+                    f"Submitted batch of {len(batch)} packet(s) for processing"
                 )
             else:
-                self.logger.warning("Thread pool saturated, implementing backpressure")
+                self.logger.warning("Thread pool saturated! Please adjust max_workers")
 
             if task_future:
                 task_future.result()
@@ -133,21 +134,42 @@ class PacketConsumer:
         start_time = time.time()
         for packet in batch:
             self._process_packet(packet)
-        self._update_processing_metrics(time.time() - start_time, len(batch))
+        self._update_batch_processing_metrics(time.time() - start_time, len(batch))
 
     def _process_packet(self, packet: CapturedPacket):
-        """单个数据包处理"""
+        """handle single packet processing"""
         time_stamp, packet = packet.timestamp, packet.packet
         try:
             scapy_packet = Ether(packet)
-            # simulate packet processing, delay 1ms
-            # print(f"Processed packet: {scapy_packet.summary()}")
-            time.sleep(0.001)
+            if Ether in scapy_packet:
+                self.logger.info(
+                    "Ethernet Frame: "
+                    f"Source MAC: {scapy_packet.src} "
+                    f"Destination MAC: {scapy_packet.dst} "
+                    f"Type: {scapy_packet.type} "
+                )
+
+                if IP in scapy_packet:
+                    self.logger.info(
+                        "IP Packet:"
+                        f"Source IP: {scapy_packet[IP].src} "
+                        f"Destination IP: {scapy_packet[IP].dst} "
+                        f"Protocol: {scapy_packet[IP].proto} "
+                    )
+
+                    if TCP in scapy_packet:
+                        self.logger.info(
+                            "TCP Segment: "
+                            f"Source Port: {scapy_packet[TCP].sport} "
+                            f"Destination Port: {scapy_packet[TCP].dport} "
+                            f"Sequence: {scapy_packet[TCP].seq} "
+                            f"Acknowledgment: {scapy_packet[TCP].ack} "
+                            f"Flags: {scapy_packet[TCP].flags} "
+                        )
         except Exception as e:
             self.logger.error(f"Error in packet processing: {e}")
-            raise
 
-    def _should_accept_more_tasks(self) -> bool:
+    def _can_accept_more_tasks(self) -> bool:
         """检查当前进行中的任务数量是否小于最大工作线程数"""
         with self._lock:
             return self._pending_tasks < self._max_workers
@@ -171,7 +193,7 @@ class PacketConsumer:
             )
 
     def _update_wait_metrics(self, wait_time: float):
-        """更新等待时间指标"""
+        """update wait time metrics"""
         self.logger.info(f"Updating wait metrics, wait time: {wait_time:.2f} seconds")
         try:
             with self._metrics_lock:
@@ -185,8 +207,8 @@ class PacketConsumer:
             f"Updated wait metrics, avg wait time: {self._metrics.avg_wait_time:.2f} seconds"
         )
 
-    def _update_processing_metrics(self, processing_time: float, batch_size: int):
-        """更新处理时间和批量大小指标"""
+    def _update_batch_processing_metrics(self, processing_time: float, batch_size: int):
+        """update processing time & load metrics"""
         self.logger.info(
             f"Updating processing metrics, processing time: {processing_time:.2f} seconds, batch size: {batch_size}"
         )
@@ -202,7 +224,7 @@ class PacketConsumer:
             self._metrics.avg_batch_size = mean(self._batch_sizes)
             self._metrics.processed_packets += batch_size
         self.logger.info(
-            f"Updated processing metrics, avg processing delay: {self._metrics.processing_delay:.2f} seconds, "
+            f"Updated processing metrics, avg processing time for each batch: {self._metrics.processing_delay:.2f} seconds, "
             f"avg batch size: {self._metrics.avg_batch_size:.2f}, processed packets: {self._metrics.processed_packets}"
         )
 
@@ -229,7 +251,7 @@ class PacketConsumer:
             )
 
     def _log_final_metrics(self):
-        """记录最终的性能统计"""
+        """log final metrics when consumer is stopped"""
         with self._metrics_lock:
             self.logger.info(
                 f"Final Consumer Metrics - "
