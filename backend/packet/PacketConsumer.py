@@ -2,10 +2,11 @@ import logging
 from statistics import mean
 from threading import Event, Lock
 import time
-from typing import List
+from typing import Any, Callable, List
+import scapy
 from scapy.all import Ether, IP, TCP
 
-from packet.Packet import CapturedPacket
+from packet.Packet import CapturedPacket, ProcessedPacket
 from utils import DoubleBufferQueue
 from concurrent.futures import Future, ThreadPoolExecutor
 
@@ -23,13 +24,13 @@ class PacketConsumer:
         self._max_workers = max_workers
         self._buffer: DoubleBufferQueue = buffer
         self.executor: ThreadPoolExecutor = None
-        
-        
+        self._processor_queue: List[Callable[[Any, ProcessedPacket], None]] = []
+
         self._min_batch_size = max(1, batch_size // 2)
         self._max_batch_size = batch_size * 4
         self._current_batch_size = batch_size
         self._max_wait_time = 5  # max wait time for collecting a batch from the buffer
-        
+
         self._stop_event = Event()
         self._stop_event.set()
         self._lock = Lock()
@@ -138,36 +139,20 @@ class PacketConsumer:
 
     def _process_packet(self, packet: CapturedPacket):
         """handle single packet processing"""
-        time_stamp, packet = packet.timestamp, packet.packet
+        time_stamp, packet = packet.timestamp, packet.raw_packet
         try:
             scapy_packet = Ether(packet)
-            if Ether in scapy_packet:
-                self.logger.info(
-                    "Ethernet Frame: "
-                    f"Source MAC: {scapy_packet.src} "
-                    f"Destination MAC: {scapy_packet.dst} "
-                    f"Type: {scapy_packet.type} "
-                )
-
-                if IP in scapy_packet:
-                    self.logger.info(
-                        "IP Packet:"
-                        f"Source IP: {scapy_packet[IP].src} "
-                        f"Destination IP: {scapy_packet[IP].dst} "
-                        f"Protocol: {scapy_packet[IP].proto} "
-                    )
-
-                    if TCP in scapy_packet:
-                        self.logger.info(
-                            "TCP Segment: "
-                            f"Source Port: {scapy_packet[TCP].sport} "
-                            f"Destination Port: {scapy_packet[TCP].dport} "
-                            f"Sequence: {scapy_packet[TCP].seq} "
-                            f"Acknowledgment: {scapy_packet[TCP].ack} "
-                            f"Flags: {scapy_packet[TCP].flags} "
-                        )
+            processed_packet = ProcessedPacket(timestamp=time_stamp, layer="Ethernet")
+            for processor in self._processor_queue:
+                processor(scapy_packet, processed_packet)
+            self.logger.info(f"Processed packet: {processed_packet}")
         except Exception as e:
             self.logger.error(f"Error in packet processing: {e}")
+
+    def register_single_processor(self, processor: Callable[[CapturedPacket], None]):
+        """register a processor function to process packets"""
+        if processor not in self._processor_queue:
+            self._processor_queue.append(processor)
 
     def _can_accept_more_tasks(self) -> bool:
         """检查当前进行中的任务数量是否小于最大工作线程数"""

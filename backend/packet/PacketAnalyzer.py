@@ -1,4 +1,5 @@
 from threading import Event
+from .Processors import check_application_protocol, check_ssh_type, check_tcp, check_udp
 from packet import PacketConsumer, PacketProducer, CapturedPacket
 from utils import DoubleBufferQueue
 
@@ -35,6 +36,10 @@ class PacketAnalyzer:
             max_workers=consumer_max_workers,
             batch_size=consumer_batch_size,
         )
+        self._packet_consumer.register_single_processor(check_udp)
+        self._packet_consumer.register_single_processor(check_tcp)
+        self._packet_consumer.register_single_processor(check_application_protocol)
+        self._packet_consumer.register_single_processor(check_ssh_type)
 
     def start(self):
         self._stop_event.clear()

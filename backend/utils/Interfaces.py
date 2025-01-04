@@ -101,3 +101,5 @@ class DynamicQueueMetrics:
     current_queue_max_size: int = 0.0
     resize_frequency: float = 0.0
     avg_load: float = 0.0
+
+

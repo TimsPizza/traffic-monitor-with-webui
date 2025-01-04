@@ -51,7 +51,7 @@ class PacketProducer:
     def _on_packet_captured(self, packet: bytes, timestamp: float):
         self.captured_packets_count += 1
         # push raw packet to avoid unnecessary parsing leading to packet loss
-        self._enqueue_packet(CapturedPacket(packet=packet, timestamp=timestamp))
+        self._enqueue_packet(CapturedPacket(raw_packet=packet, timestamp=timestamp))
 
     def _enqueue_packet(self, packet):
         self._buffer.enqueue(packet)
