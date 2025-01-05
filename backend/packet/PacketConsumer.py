@@ -149,6 +149,7 @@ class PacketConsumer:
             for processor in self._processor_queue:
                 processor(scapy_packet, processed_packet)
             is_insert_success = MONGO_DB.insert_packet(processed_packet)
+            self._metrics.packet_size_sum += processed_packet.length
             self.logger.info(
                 f"Processed packet: {processed_packet}, inserted: {is_insert_success}"
             )

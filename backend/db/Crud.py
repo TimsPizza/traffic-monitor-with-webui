@@ -9,6 +9,7 @@ from packet.Packet import ProcessedPacket
 class PacketDB:
   def __init__(self, uri: str = ENV_CONFIG.database_uri, db_name: str = "traffic_analyzer"):
     self.client = MongoClient(uri)
+    
     self.db: Database = self.client[db_name]
     self.packets: Collection = self.db.packets
     self.logger = logging.getLogger(self.__class__.__name__)

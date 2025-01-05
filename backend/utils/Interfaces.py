@@ -79,6 +79,7 @@ class ConsumerMetrics:
     avg_wait_time: float = 0
     processing_delay: float = 0
     processed_packets: int = 0
+    packet_size_sum: int = 0
 
 
 @dataclass
