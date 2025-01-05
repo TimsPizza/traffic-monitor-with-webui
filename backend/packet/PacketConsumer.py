@@ -158,8 +158,11 @@ class PacketConsumer:
 
     def register_single_processor(self, processor: Callable[[CapturedPacket], None]):
         """register a processor function to process packets"""
-        if processor not in self._processor_queue:
-            self._processor_queue.append(processor)
+        try:
+            if processor not in self._processor_queue:
+                self._processor_queue.append(processor)
+        except Exception as e:
+            self.logger.error(f"Error registering processor: {e}")
 
     def _can_accept_more_tasks(self) -> bool:
         """check if more tasks can be accepted by the executor based on max_workers"""

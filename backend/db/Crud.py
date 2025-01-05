@@ -3,7 +3,7 @@ from typing import List, Optional
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
-from core.config import ENV_CONFIG
+from core.services import ENV_CONFIG
 from packet.Packet import ProcessedPacket
 
 class PacketDB:

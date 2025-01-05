@@ -16,6 +16,16 @@ class LazyConfig:
         self._loaded = True
 
     @property
+    def maxmind_license_key(self):
+        self._ensure_loaded()
+        return os.getenv("MAXMIND_LICENSE_KEY")
+
+    @property
+    def geoip_db_abs_path(self):
+        self._ensure_loaded()
+        return os.getenv("GEOIP_DB_ABSOLUTE_PATH")
+
+    @property
     def database_uri(self):
         self._ensure_loaded()
         return os.getenv("DATABASE_URI")
@@ -47,6 +57,11 @@ class LazyConfig:
                 return logging.CRITICAL
             case _:
                 return logging.INFO
+
+    @property
+    def capture_interface(self):
+        self._ensure_loaded()
+        return os.getenv("CAPTURE_INTERFACE")
 
 
 ENV_CONFIG = LazyConfig()

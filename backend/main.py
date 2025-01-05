@@ -5,7 +5,6 @@ from contextlib import asynccontextmanager
 import os
 import sys
 from routes import CaptureRouter
-from dotenv import load_dotenv
 
 
 @asynccontextmanager

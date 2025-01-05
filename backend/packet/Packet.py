@@ -21,6 +21,7 @@ class ProcessedPacket:
     layer: str = ""
     source_ip: str = ""
     src_port: int = -1
+    src_region: str = ""
     dst_port: int = -1
     protocol: str = ""
     length: int = -1

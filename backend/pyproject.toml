@@ -17,6 +17,7 @@ netifaces = "^0.11.0"
 py-spy = "^0.4.0"
 python-dotenv = "^1.0.1"
 pymongo = "^4.10.1"
+geoip2 = "^4.8.1"
 
 
 [build-system]

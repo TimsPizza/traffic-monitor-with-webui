@@ -2,9 +2,8 @@ from typing import List
 from fastapi import APIRouter, Depends
 
 from models import CaptureFilterRecord
-from packet import PacketAnalyzer
-from utils import BPFUtils 
-from core.services import AnalyzerSingleton
+from packet.PacketAnalyzer import PacketAnalyzer, AnalyzerSingleton
+from utils import BPFUtils
 
 # TODO: add auth to this route
 router = APIRouter(prefix="/capture")
@@ -16,7 +15,7 @@ def get_packet_analyzer():
 
 @router.get("/")
 async def read_root():
-    return {"Hello": "World"} 
+    return {"Hello": "World"}
 
 
 @router.post("/start")

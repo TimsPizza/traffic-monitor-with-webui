@@ -156,3 +156,13 @@ def check_ssh_type(scapy_packet, packet: ProcessedPacket):
         packet.protocol += "-Auth"
     elif msg_type >= 90:  # Channel related messages
         packet.protocol += "-Data"
+        
+def check_src_ip_region(scapy_packet, packet: ProcessedPacket):
+    from core.services import GeoIPSingleton 
+    if not scapy_packet.haslayer("IP") or GeoIPSingleton.given_up:
+        return
+    ip = scapy_packet["IP"]
+    src_ip = ip.src
+    region = GeoIPSingleton.check_region(src_ip)
+    packet.src_region = region if region else "Unknown"
+

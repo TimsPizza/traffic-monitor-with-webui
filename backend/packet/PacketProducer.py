@@ -1,11 +1,9 @@
 import logging
 import time
-from typing import Optional
 from core.config import ENV_CONFIG
 from packet.Packet import CapturedPacket
 from packet.PacketCapturer import PacketCapturer
 from utils.DoubleBufferQueue import DoubleBufferQueue
-from scapy.all import Ether
 
 
 class PacketProducer:

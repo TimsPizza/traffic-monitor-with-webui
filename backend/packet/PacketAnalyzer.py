@@ -1,6 +1,16 @@
 from threading import Event
-from .Processors import check_application_protocol, check_ssh_type, check_tcp, check_udp
-from packet import PacketConsumer, PacketProducer, CapturedPacket
+
+from core.config import ENV_CONFIG
+from .Processors import (
+    check_application_protocol,
+    check_src_ip_region,
+    check_ssh_type,
+    check_tcp,
+    check_udp,
+)
+from packet.PacketConsumer import PacketConsumer
+from packet.PacketProducer import PacketProducer
+from packet.Packet import CapturedPacket
 from utils import DoubleBufferQueue
 
 
@@ -40,6 +50,7 @@ class PacketAnalyzer:
         self._packet_consumer.register_single_processor(check_tcp)
         self._packet_consumer.register_single_processor(check_application_protocol)
         self._packet_consumer.register_single_processor(check_ssh_type)
+        self._packet_consumer.register_single_processor(check_src_ip_region)
 
     def start(self):
         self._stop_event.clear()
@@ -61,3 +72,19 @@ class PacketAnalyzer:
         self._packet_producer.stop()
         self._packet_consumer.stop()
         self._double_buffer_queue.stop()
+
+
+class AnalyzerSingleton:
+    _instance = None
+
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            cls._instance = PacketAnalyzer(
+                buffer_min_size=256,
+                buffer_max_size=8192,
+                consumer_max_workers=4,
+                consumer_batch_size=256,
+                capture_interface=ENV_CONFIG.capture_interface,
+            )
+        return cls._instance
