@@ -1,6 +1,7 @@
 import logging
 import time
 from typing import Optional
+from core.config import ENV_CONFIG
 from packet.Packet import CapturedPacket
 from packet.PacketCapturer import PacketCapturer
 from utils.DoubleBufferQueue import DoubleBufferQueue
@@ -21,7 +22,7 @@ class PacketProducer:
         self.captured_packets_count = 0
         self._capturer = PacketCapturer(interface=interface, filter=filter)
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(ENV_CONFIG.log_level)
 
     def start(self):
         try:

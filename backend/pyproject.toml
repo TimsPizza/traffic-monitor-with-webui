@@ -5,6 +5,7 @@ description = ""
 authors = ["Timspizza <peisen.jiang2001@gmail.com>"]
 license = "MIT"
 readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -14,6 +15,8 @@ scapy = "^2.6.1"
 uvicorn = "^0.34.0"
 netifaces = "^0.11.0"
 py-spy = "^0.4.0"
+python-dotenv = "^1.0.1"
+pymongo = "^4.10.1"
 
 
 [build-system]

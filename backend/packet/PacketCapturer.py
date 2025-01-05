@@ -5,6 +5,8 @@ import pcap
 from threading import Thread, Event
 import logging
 
+from core.config import ENV_CONFIG
+
 
 class PacketCapturer:
     def __init__(self, interface: str, filter: Optional[str] = None):
@@ -21,7 +23,7 @@ class PacketCapturer:
         self._capture_thread: Thread = None
         self._callback: Optional[Callable] = None
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(ENV_CONFIG.log_level)
         if filter:
             self._cache_filter(filter)
 

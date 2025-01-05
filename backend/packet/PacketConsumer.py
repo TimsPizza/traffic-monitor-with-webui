@@ -6,6 +6,8 @@ from typing import Any, Callable, List
 import scapy
 from scapy.all import Ether, IP, TCP
 
+from core.config import ENV_CONFIG
+from db.Crud import MONGO_DB
 from packet.Packet import CapturedPacket, ProcessedPacket
 from utils import DoubleBufferQueue
 from concurrent.futures import Future, ThreadPoolExecutor
@@ -44,7 +46,7 @@ class PacketConsumer:
         self._processing_times = []
 
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(ENV_CONFIG.log_level)
 
         # metrics update interval
         self._metrics_interval = 5  # 5 seconds
@@ -112,12 +114,11 @@ class PacketConsumer:
         return batch
 
     def _process_batch(self, batch: List[CapturedPacket]):
-        start_time = time.time()
         task_future = None
         try:
             if self._can_accept_more_tasks():
                 task_future = self._submit_task(self._process_batch_executor, batch)
-                self.logger.info(
+                self.logger.debug(
                     f"Submitted batch of {len(batch)} packet(s) for processing"
                 )
             else:
@@ -143,9 +144,14 @@ class PacketConsumer:
         try:
             scapy_packet = Ether(packet)
             processed_packet = ProcessedPacket(timestamp=time_stamp, layer="Ethernet")
+            processed_packet.length = len(packet)
+            # process packet with registered processors, so sequence matters!
             for processor in self._processor_queue:
                 processor(scapy_packet, processed_packet)
-            self.logger.info(f"Processed packet: {processed_packet}")
+            is_insert_success = MONGO_DB.insert_packet(processed_packet)
+            self.logger.info(
+                f"Processed packet: {processed_packet}, inserted: {is_insert_success}"
+            )
         except Exception as e:
             self.logger.error(f"Error in packet processing: {e}")
 
@@ -155,7 +161,7 @@ class PacketConsumer:
             self._processor_queue.append(processor)
 
     def _can_accept_more_tasks(self) -> bool:
-        """检查当前进行中的任务数量是否小于最大工作线程数"""
+        """check if more tasks can be accepted by the executor based on max_workers"""
         with self._lock:
             return self._pending_tasks < self._max_workers
 

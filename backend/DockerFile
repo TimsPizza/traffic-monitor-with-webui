@@ -1,0 +1,59 @@
+# Use the official MongoDB image
+FROM mongo:latest
+
+# Install necessary dependencies
+RUN apt-get update && apt-get install -y \
+    software-properties-common \
+    build-essential \
+    curl \
+    wget \
+    libssl-dev \
+    zlib1g-dev \
+    libbz2-dev \
+    libreadline-dev \
+    libsqlite3-dev \
+    libncurses5-dev \
+    libncursesw5-dev \
+    libffi-dev \
+    liblzma-dev \
+    libpcap-dev \
+    nginx
+
+# Install Python 3.10.12
+RUN wget https://www.python.org/ftp/python/3.10.12/Python-3.10.12.tgz && \
+    tar xvf Python-3.10.12.tgz && \
+    cd Python-3.10.12 && \
+    ./configure --enable-optimizations && \
+    make && make altinstall && \
+    cd .. && rm -rf Python-3.10.12 Python-3.10.12.tgz
+
+# Verify Python and pip
+RUN python3.10 --version && python3.10 -m ensurepip && python3.10 -m pip --version
+
+# Install poetry
+RUN curl -sSL https://install.python-poetry.org | python3.10 -
+
+# Set working directory and copy application files
+WORKDIR /app
+COPY . /app
+
+# Install dependencies using poetry
+RUN python3.10 -m pip install --upgrade pip && \
+    python3.10 -m pip install poetry && \
+    poetry install --no-root
+
+# Expose ports for front-end and back-end
+ENV FRONTEND_PORT=8086
+ENV BACKEND_PORT=8088
+
+EXPOSE ${FRONTEND_PORT} ${BACKEND_PORT}
+
+# Configure Nginx for the front-end server
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Mount volume for MongoDB data persistence
+VOLUME ["/data/db"]
+
+# Start services
+CMD service nginx start && \
+    python3 main.py
