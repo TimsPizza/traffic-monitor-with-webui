@@ -46,11 +46,11 @@ class PacketAnalyzer:
             max_workers=consumer_max_workers,
             batch_size=consumer_batch_size,
         )
-        self._packet_consumer.register_single_processor(check_udp)
-        self._packet_consumer.register_single_processor(check_tcp)
-        self._packet_consumer.register_single_processor(check_application_protocol)
-        self._packet_consumer.register_single_processor(check_ssh_type)
-        self._packet_consumer.register_single_processor(check_src_ip_region)
+        self._packet_consumer.add_processor(check_udp)
+        self._packet_consumer.add_processor(check_tcp)
+        self._packet_consumer.add_processor(check_application_protocol)
+        self._packet_consumer.add_processor(check_ssh_type)
+        self._packet_consumer.add_processor(check_src_ip_region)
 
     def start(self):
         self._stop_event.clear()
@@ -81,10 +81,10 @@ class AnalyzerSingleton:
     def get_instance(cls):
         if cls._instance is None:
             cls._instance = PacketAnalyzer(
-                buffer_min_size=256,
-                buffer_max_size=8192,
-                consumer_max_workers=4,
-                consumer_batch_size=256,
+                buffer_min_size=ENV_CONFIG.queue_min_size,
+                buffer_max_size=ENV_CONFIG.queue_max_size,
+                consumer_max_workers=ENV_CONFIG.max_workers,
+                consumer_batch_size=ENV_CONFIG.consumer_batch_size,
                 capture_interface=ENV_CONFIG.capture_interface,
             )
         return cls._instance

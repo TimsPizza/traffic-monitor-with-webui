@@ -63,5 +63,45 @@ class LazyConfig:
         self._ensure_loaded()
         return os.getenv("CAPTURE_INTERFACE")
 
+    @property
+    def queue_min_size(self):
+        self._ensure_loaded()
+        return int(os.getenv("MIN_QUEUE_SIZE"))
+
+    @property
+    def queue_max_size(self):
+        self._ensure_loaded()
+        return int(os.getenv("MAX_QUEUE_SIZE"))
+
+    @property
+    def max_workers(self):
+        self._ensure_loaded()
+        return int(os.getenv("MAX_WORKERS"))
+
+    @property
+    def consumer_batch_size(self):
+        self._ensure_loaded()
+        return int(os.getenv("START_BATCH_SIZE"))
+
+    @property
+    def buffer_growth_factor(self):
+        self._ensure_loaded()
+        return float(os.getenv("GROWTH_FACTOR"))
+
+    @property
+    def buffer_shrink_factor(self):
+        self._ensure_loaded()
+        return float(os.getenv("SHRINK_FACTOR"))
+    
+    @property
+    def backend_port(self):
+        self._ensure_loaded()
+        return int(os.getenv("BACKEND_PORT"))
+    
+    @property
+    def backend_host(self):
+        self._ensure_loaded()
+        return os.getenv("BACKEND_HOST")
+
 
 ENV_CONFIG = LazyConfig()

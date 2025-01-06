@@ -4,6 +4,7 @@ from fastapi.logger import logger
 from contextlib import asynccontextmanager
 import os
 import sys
+from backend.core.config import ENV_CONFIG
 from routes import CaptureRouter
 
 
@@ -34,4 +35,4 @@ def check_root():
 if __name__ == "__main__":
     check_root()
     # uvicorn.run("main:app", host="0.0.0.0", port=8000)
-    uvicorn.run("main:app", host="0.0.0.0", port=8088, reload=True)
+    uvicorn.run("main:app", host=ENV_CONFIG.backend_host, port=ENV_CONFIG.backend_port, reload=True)

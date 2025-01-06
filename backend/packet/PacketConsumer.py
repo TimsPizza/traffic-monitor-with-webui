@@ -156,7 +156,7 @@ class PacketConsumer:
         except Exception as e:
             self.logger.error(f"Error in packet processing: {e}")
 
-    def register_single_processor(self, processor: Callable[[CapturedPacket], None]):
+    def add_processor(self, processor: Callable[[CapturedPacket], None]):
         """register a processor function to process packets"""
         try:
             if processor not in self._processor_queue:
