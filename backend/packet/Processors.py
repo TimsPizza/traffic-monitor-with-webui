@@ -151,11 +151,11 @@ def check_ssh_type(scapy_packet, packet: ProcessedPacket):
     msg_type = payload[5] if len(payload) > 5 else 0
 
     if msg_type in (20, 21):  # SSH_MSG_KEXINIT
-        packet.protocol += "-Handshake"
+        packet.protocol += "SSH-Handshake"
     elif msg_type == 50:  # SSH_MSG_USERAUTH_REQUEST
-        packet.protocol += "-Auth"
+        packet.protocol += "SSH-Auth"
     elif msg_type >= 90:  # Channel related messages
-        packet.protocol += "-Data"
+        packet.protocol += "SSH-Data"
         
 def check_src_ip_region(scapy_packet, packet: ProcessedPacket):
     from core.services import GeoIPSingleton 
