@@ -10,9 +10,9 @@ from routes import CaptureRouter
 
 @asynccontextmanager
 async def life_span(app: FastAPI):
-    logger.info("Starting")
+    logger.info("Starting app")
     yield
-    logger.info("Stopping")
+    logger.info("Stopping app")
 
 
 app = FastAPI(lifespan=life_span)

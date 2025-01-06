@@ -44,7 +44,7 @@ class PacketCapturer:
     def register_callback(self, callback: Callable[[bytes, float], None]) -> None:
         """Register callback for packet processing"""
         self._callback = callback
-        self.logger.info(f"Callback registered:{callback}")
+        self.logger.debug(f"Callback registered:{callback}")
 
     def start(self) -> None:
         """Start packet capture in separate thread"""

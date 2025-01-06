@@ -6,7 +6,7 @@ from utils.Interfaces import BaseDynamicQueueResizeStrategy, BufferStrategy
 
 
 class TimeBasedStrategy(BufferStrategy):
-    """基于时间的缓冲区交换策略"""
+    """Based on time interval"""
 
     def __init__(self, interval: float):
         self.interval = interval
@@ -34,6 +34,23 @@ class SizeBasedStrategy(BufferStrategy):
 
     def on_swap(self):
         pass
+    
+class MixedSwapStrategy(BufferStrategy):
+    """Based on both time interval and size of the queue"""
+
+    def __init__(self, swap_interval_sec: float, threshold_ratio: float):
+        self.time_based_strategy = TimeBasedStrategy(swap_interval_sec)
+        self.size_based_strategy = SizeBasedStrategy(threshold_ratio)
+
+    def should_swap(self, current_size: int, max_size: int) -> bool:
+        return (
+            self.time_based_strategy.should_swap()
+            or self.size_based_strategy.should_swap(current_size, max_size)
+        )
+
+    def on_swap(self):
+        self.time_based_strategy.on_swap()
+        self.size_based_strategy.on_swap()
 
 
 class DynamicQueueResizeStrategy(BaseDynamicQueueResizeStrategy):

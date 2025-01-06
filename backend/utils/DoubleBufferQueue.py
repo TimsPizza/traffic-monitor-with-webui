@@ -7,7 +7,7 @@ from threading import RLock
 from utils.Interfaces import DoubleBufferQueueMetrics
 
 from .DynamicQueue import DynamicQueue
-from .Strategy import BufferStrategy, SizeBasedStrategy
+from .Strategy import BufferStrategy, MixedSwapStrategy
 
 T = TypeVar("T")
 
@@ -43,8 +43,11 @@ class DoubleBufferQueue(Generic[T]):
         self.min_size = min_size
         self._active_index = 0
         self._index_lock = Lock()
-        # make sure threshold_ratio is less than Dynamic queue expand_threshold_ratio because it is designed to be expanded first, or error will occur
-        self._strategy = swap_strategy or SizeBasedStrategy(threshold_ratio=0.8)
+        # use mixed strategy by default, swap every 10 seconds(low pressure)
+        # or when the queue is 80% full(high pressure, buffer already expanded to the max size)
+        self._strategy = swap_strategy or MixedSwapStrategy(
+            swap_interval_sec=10, threshold_ratio=0.8
+        )
 
         # Threading controls
         self._metrics_lock = RLock()  # For metrics updates
@@ -112,12 +115,12 @@ class DoubleBufferQueue(Generic[T]):
             self.logger.debug("Swap event triggered")
         return True
 
-    def popleft(self, block: bool = False, timeout: Optional[float] = None) -> Optional[T]:
+    def popleft(
+        self, block: bool = False, timeout: Optional[float] = None
+    ) -> Optional[T]:
         """Pop item from processing queue"""
         try:
-            # currently processing queue is somehow never used/swapped, so only pop from active queue.
-            # TODO: fix swap logic to use processing queue, if needed?
-            item = self._active_queue.popleft(block=block, timeout=timeout)
+            item = self._processing_queue.popleft(block=block, timeout=timeout)
             if item:
                 with self._metrics_lock:
                     self._metrics.total_processed += 1
@@ -157,7 +160,7 @@ class DoubleBufferQueue(Generic[T]):
 
         if self._strategy:
             self._strategy.on_swap()
-        self.logger.info("Swapped queues")
+        self.logger.debug("Swapped queues")
 
     @property
     def metrics(self) -> Dict[str, Any]:

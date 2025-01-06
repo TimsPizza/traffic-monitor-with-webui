@@ -150,7 +150,7 @@ class PacketConsumer:
                 processor(scapy_packet, processed_packet)
             is_insert_success = MONGO_DB.insert_packet(processed_packet)
             self._metrics.packet_size_sum += processed_packet.length
-            self.logger.info(
+            self.logger.debug(
                 f"Processed packet: {processed_packet}, inserted: {is_insert_success}"
             )
         except Exception as e:
@@ -189,7 +189,6 @@ class PacketConsumer:
 
     def _update_wait_metrics(self, wait_time: float):
         """update wait time metrics"""
-        self.logger.info(f"Updating wait metrics, wait time: {wait_time:.2f} seconds")
         try:
             with self._metrics_lock:
                 self._wait_times.append(wait_time)
@@ -198,15 +197,12 @@ class PacketConsumer:
                 self._metrics.avg_wait_time = mean(self._wait_times)
         except Exception as e:
             self.logger.error(f"Error updating wait metrics: {e}")
-        self.logger.info(
+        self.logger.debug(
             f"Updated wait metrics, avg wait time: {self._metrics.avg_wait_time:.2f} seconds"
         )
 
     def _update_batch_processing_metrics(self, processing_time: float, batch_size: int):
         """update processing time & load metrics"""
-        self.logger.info(
-            f"Updating processing metrics, processing time: {processing_time:.2f} seconds, batch size: {batch_size}"
-        )
         with self._metrics_lock:
             self._processing_times.append(processing_time)
             self._batch_sizes.append(batch_size)
@@ -218,7 +214,7 @@ class PacketConsumer:
             self._metrics.processing_delay = mean(self._processing_times)
             self._metrics.avg_batch_size = mean(self._batch_sizes)
             self._metrics.processed_packets += batch_size
-        self.logger.info(
+        self.logger.debug(
             f"Updated processing metrics, avg processing time for each batch: {self._metrics.processing_delay:.2f} seconds, "
             f"avg batch size: {self._metrics.avg_batch_size:.2f}, processed packets: {self._metrics.processed_packets}"
         )
