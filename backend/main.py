@@ -4,7 +4,7 @@ from fastapi.logger import logger
 from contextlib import asynccontextmanager
 import os
 import sys
-from backend.core.config import ENV_CONFIG
+from core.config import ENV_CONFIG
 from routes import CaptureRouter
 
 

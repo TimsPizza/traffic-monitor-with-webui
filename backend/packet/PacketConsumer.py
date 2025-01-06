@@ -9,10 +9,10 @@ from scapy.all import Ether, IP, TCP
 from core.config import ENV_CONFIG
 from db.Crud import MONGO_DB
 from packet.Packet import CapturedPacket, ProcessedPacket
-from utils import DoubleBufferQueue
+from utils.DoubleBufferQueue import DoubleBufferQueue
 from concurrent.futures import Future, ThreadPoolExecutor
 
-from utils import ConsumerMetrics
+from utils.Interfaces import ConsumerMetrics
 
 
 class PacketConsumer:
@@ -89,7 +89,7 @@ class PacketConsumer:
             start_wait = time.time()
             batch = self._read_batch_from_queue(self._current_batch_size)
             wait_time = time.time() - start_wait
-            self.logger.info(
+            self.logger.debug(
                 f"Read batch of {len(batch)} packets in {wait_time:.2f} seconds"
             )
             if len(batch) > 0:
@@ -104,7 +104,7 @@ class PacketConsumer:
         while (
             len(batch) < batch_size and (time.time() - start_time) < self._max_wait_time
         ):
-            packet = self._buffer.popleft(block=True, timeout=self._max_wait_time / 2)
+            packet = self._buffer.popleft(block=True, timeout=self._max_wait_time / 4)
             if packet:
                 batch.append(packet)
             elif len(batch) >= self._min_batch_size:

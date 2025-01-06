@@ -11,7 +11,7 @@ from .Processors import (
 from packet.PacketConsumer import PacketConsumer
 from packet.PacketProducer import PacketProducer
 from packet.Packet import CapturedPacket
-from utils import DoubleBufferQueue
+from utils.DoubleBufferQueue import DoubleBufferQueue
 
 
 class PacketAnalyzer:

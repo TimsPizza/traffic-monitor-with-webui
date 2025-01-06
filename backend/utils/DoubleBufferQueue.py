@@ -4,6 +4,8 @@ import logging
 import time
 from threading import RLock
 
+from utils.Interfaces import DoubleBufferQueueMetrics
+
 from .DynamicQueue import DynamicQueue
 from .Strategy import BufferStrategy, SizeBasedStrategy
 
@@ -53,14 +55,7 @@ class DoubleBufferQueue(Generic[T]):
         self._active_queue_avg_loads: List[float] = []
         self._processing_queue_avg_loads: List[float] = []
         # Metrics
-        self._metrics: Dict[str, Union[int, float]] = {
-            "total_processed": 0,
-            "total_dropped": 0,
-            "swap_count": 0,
-            "last_swap_time": 0.0,
-            "avg_process_time": 0.0,
-            "total_process_time": 0.0,
-        }
+        self._metrics: DoubleBufferQueueMetrics = DoubleBufferQueueMetrics()
 
         self.logger = logging.getLogger(self.__class__.__name__)
 
@@ -106,7 +101,7 @@ class DoubleBufferQueue(Generic[T]):
 
         if not success:
             with self._metrics_lock:
-                self._metrics["total_dropped"] += 1
+                self._metrics.total_dropped += 1
             return False
 
         if self._strategy and self._strategy.should_swap(
@@ -125,7 +120,7 @@ class DoubleBufferQueue(Generic[T]):
             item = self._active_queue.popleft(block=block, timeout=timeout)
             if item:
                 with self._metrics_lock:
-                    self._metrics["total_processed"] += 1
+                    self._metrics.total_processed += 1
             return item if item else None
         except Exception as e:
             self.logger.error(f"Error in 'popleft': {e}")
@@ -157,8 +152,8 @@ class DoubleBufferQueue(Generic[T]):
             self._active_index = 1 - self._active_index
 
         with self._metrics_lock:
-            self._metrics["swap_count"] += 1
-            self._metrics["last_swap_time"] = time.time()
+            self._metrics.swap_count += 1
+            self._metrics.last_swap_time = time.time()
 
         if self._strategy:
             self._strategy.on_swap()
@@ -169,7 +164,7 @@ class DoubleBufferQueue(Generic[T]):
         """Get current metrics"""
         with self._metrics_lock:
             return {
-                **self._metrics,
+                **self._metrics.__dict__.copy(),
                 "active_queue_metrics": self._active_queue.get_metrics(),
                 "processing_queue_metrics": self._processing_queue.get_metrics(),
             }
