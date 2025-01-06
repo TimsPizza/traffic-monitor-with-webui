@@ -25,3 +25,4 @@ class ProcessedPacket:
     dst_port: int = -1
     protocol: str = ""
     length: int = -1
+    is_handshake: bool = False

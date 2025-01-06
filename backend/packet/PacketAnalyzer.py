@@ -3,6 +3,7 @@ from threading import Event
 from core.config import ENV_CONFIG
 from .Processors import (
     check_application_protocol,
+    check_handshake,
     check_src_ip_region,
     check_ssh_type,
     check_tcp,
@@ -48,9 +49,10 @@ class PacketAnalyzer:
         )
         self._packet_consumer.add_processor(check_udp)
         self._packet_consumer.add_processor(check_tcp)
+        self._packet_consumer.add_processor(check_src_ip_region)
         self._packet_consumer.add_processor(check_application_protocol)
         self._packet_consumer.add_processor(check_ssh_type)
-        self._packet_consumer.add_processor(check_src_ip_region)
+        self._packet_consumer.add_processor(check_handshake)
 
     def start(self):
         self._stop_event.clear()
