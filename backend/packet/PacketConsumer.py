@@ -1,4 +1,5 @@
 import logging
+from multiprocessing import process
 from statistics import mean
 from threading import Event, Lock
 import time
@@ -153,6 +154,8 @@ class PacketConsumer:
                 self._metrics.packet_size_sum += processed_packet.length
                 if processed_packet.is_handshake:
                     self._metrics.handshake_count += 1
+                if processed_packet.source_ip != "":
+                    self._metrics.ip_packet_size_sum += processed_packet.length
             is_insert_success = MONGO_DB.insert_packet(processed_packet)
             self.logger.debug(
                 f"Processed packet: {processed_packet}, inserted: {is_insert_success}"

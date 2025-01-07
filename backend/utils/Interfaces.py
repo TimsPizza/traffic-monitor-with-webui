@@ -50,6 +50,7 @@ class ConsumerMetrics:
     processing_delay: float = 0
     processed_packets: int = 0
     packet_size_sum: int = 0
+    ip_packet_size_sum: int = 0
     handshake_count: int = 0
 
 
