@@ -4,11 +4,13 @@ import Card from "../components/Card";
 import Chart from "../components/Chart";
 import { DEFAULT_COLOR_PALETTES, EChartType } from "../client/types";
 import {
+  accessRecordData,
   pieData,
   polylineData,
   radialBarData,
   smoothLineData,
 } from "../fakedata";
+import Tables from "../components/Tables";
 
 const Dashboard = () => {
   return (
@@ -34,7 +36,7 @@ const Dashboard = () => {
             type={EChartType.SMOOTH_LINE}
             title="SmoothLine Chart Card Test"
             data={smoothLineData}
-            colorPalette={DEFAULT_COLOR_PALETTES[2]}
+            colorPalette={DEFAULT_COLOR_PALETTES[4]}
           />
           <Card
             type={EChartType.PIE}
@@ -50,6 +52,9 @@ const Dashboard = () => {
             data={smoothLineData}
             colorPalette={DEFAULT_COLOR_PALETTES[3]}
           />
+        </Col>
+        <Col sm={6}>
+          <Tables data={accessRecordData} />
         </Col>
       </Row>
     </div>

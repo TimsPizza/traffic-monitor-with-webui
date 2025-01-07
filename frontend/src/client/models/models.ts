@@ -11,6 +11,7 @@ export interface IAccessRecord {
   src_ip: string;
   dst_ip: string;
   src_port: number;
+  src_region: string;
   dst_port: number;
   protocol: string;
   timestamp: string;

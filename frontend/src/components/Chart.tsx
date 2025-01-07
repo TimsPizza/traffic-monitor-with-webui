@@ -13,6 +13,8 @@ import {
   Legend,
   CartesianGrid,
   Cell,
+  Area,
+  AreaChart,
 } from "recharts";
 import {
   DEFAULT_COLOR_PALETTES,
@@ -53,10 +55,20 @@ const Chart: React.FC<ChartProps> = ({
     switch (chartType) {
       case EChartType.POLY_LINE:
         return (
-          <LineChart
+          <AreaChart
             data={data}
             margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
           >
+            <defs>
+              <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={getRndColor()} stopOpacity={0.8} />
+                <stop
+                  offset="95%"
+                  stopColor={getRndColor()}
+                  stopOpacity={0.2}
+                />
+              </linearGradient>
+            </defs>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
               dataKey="timestamp"
@@ -66,16 +78,28 @@ const Chart: React.FC<ChartProps> = ({
             />
             <YAxis />
             <Tooltip />
+            <Area
+              type="linear"
+              dataKey="value"
+              stroke={getRndColor()}
+              fill="url(#colorGradient)"
+            />
             {/* <Legend /> */}
             <Line type="linear" dataKey="value" stroke={getRndColor()} />
-          </LineChart>
+          </AreaChart>
         );
       case EChartType.SMOOTH_LINE:
         return (
-          <LineChart
+          <AreaChart
             data={data}
             margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
           >
+            <defs>
+              <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={getRndColor()} stopOpacity={0.8} />
+                <stop offset="95%" stopColor={getRndColor()} stopOpacity={0} />
+              </linearGradient>
+            </defs>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
               dataKey="timestamp"
@@ -85,15 +109,13 @@ const Chart: React.FC<ChartProps> = ({
             />
             <YAxis />
             <Tooltip />
-            {/* <Legend /> */}
-            <Line
+            <Area
               type="monotone"
               dataKey="value"
               stroke={getRndColor()}
-              strokeWidth={2}
-              dot={false}
+              fill="url(#colorGradient)"
             />
-          </LineChart>
+          </AreaChart>
         );
       case EChartType.RING:
         return (
@@ -110,7 +132,13 @@ const Chart: React.FC<ChartProps> = ({
               endAngle={-270}
             >
               {(data as TPieData[]).map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={getRndColor()} />
+                <Cell
+                  key={`cell-${index}`}
+                  fill={getRndColor()}
+                  style={{
+                    filter: `drop-shadow(0px 0px 5px ${colorPalette[index % colorPalette.length]}`,
+                  }}
+                />
               ))}
             </Pie>
             <Tooltip />

@@ -1,4 +1,6 @@
-import { TPieData, TPolyLineData, TRadialBarData, TSmoothLineData } from "./client/types";
+import { IAccessRecord } from "./client/models/models";
+import { DATE_FORMATTERS, TPieData, TPolyLineData, TRadialBarData, TSmoothLineData } from "./client/types";
+import { unix2Date } from "./utils/timetools";
 
 export const polylineData:TPolyLineData[] = [
   { timestamp: 1698768000, value: 100, name: "Point 1" },
@@ -23,3 +25,32 @@ export const pieData:TPieData[] = [
   { name: "B", value: 30, fill: "#82ca9d" },
   { name: "C", value: 30, fill: "#ffc658" },
 ];
+
+const generateRandomIP = () => 
+  Array(4).fill(0).map(() => Math.floor(Math.random() * 256)).join('.');
+
+const generateRandomPort = () => 
+  Math.floor(Math.random() * (65535 - 1024) + 1024);
+
+const protocols = ['tcp', 'udp', 'icmp'] as const;
+const generateRandomProtocol = () => 
+  protocols[Math.floor(Math.random() * protocols.length)];
+
+const regions = ['US', 'CN', 'RU', 'CA', 'BR', 'AU', 'IN', 'JP', 'DE', 'FR'] as const;
+const generateRandomIPRegion = () => 
+  regions[Math.floor(Math.random() * regions.length)];
+
+const generateAccessRecord = (id: number): IAccessRecord => ({
+  id,
+  src_ip: generateRandomIP(),
+  dst_ip: generateRandomIP(),
+  src_port: generateRandomPort(),
+  src_region:generateRandomIPRegion(),
+  dst_port: generateRandomPort(),
+  protocol: generateRandomProtocol(),
+  timestamp: unix2Date(Date.now() - Math.random() * 86400000, DATE_FORMATTERS.HH_mm_ss),
+});
+
+export const accessRecordData: IAccessRecord[] = 
+  Array(50).fill(0).map((_, index) => generateAccessRecord(index + 1));
+

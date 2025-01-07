@@ -34,12 +34,13 @@ export type TSmoothLineData = TPolyLineData;
 export type TColorPalette = string[];
 
 export const DEFAULT_COLOR_PALETTES: TColorPalette[] = [
-  ["#16C47F", "#FFD65A", "#FF9D23", "#F93827"],
-  ["#FF9D23", "#FFD65A", "#16C47F", "#F93827"],
-  ["#FFD65A", "#16C47F", "#FF9D23", "#F93827"],
-  ["#F93827", "#FFD65A", "#FF9D23", "#16C47F"],
-  ["#FB4141", "#FFC145", "#ECE852", "#5CB338"],
-  ["FF8383", "#FFF574", "#A1D6CB", "#A19AD3"],
+  // return shuffled array of colors
+  ["#16C47F", "#FFD65A", "#FF9D23", "#F93827"].sort(() => Math.random() - 0.5),
+  ["#FF9D23", "#FFD65A", "#16C47F", "#F93827"].sort(() => Math.random() - 0.5),
+  ["#FFD65A", "#16C47F", "#FF9D23", "#F93827"].sort(() => Math.random() - 0.5),
+  ["#F93827", "#FFD65A", "#FF9D23", "#16C47F"].sort(() => Math.random() - 0.5),
+  ["#FB4141", "#FFC145", "#ECE852", "#5CB338"].sort(() => Math.random() - 0.5),
+  ["FF8383", "#FFF574", "#A1D6CB", "#A19AD3"].sort(() => Math.random() - 0.5),
 ];
 
 // End of type definitions for charts
