@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   LineChart,
   Line,
@@ -12,62 +12,75 @@ import {
   Tooltip,
   Legend,
   CartesianGrid,
+  Cell,
 } from "recharts";
 import {
+  DEFAULT_COLOR_PALETTES,
   EChartType,
+  TColorPalette,
   TChartData,
   TPieData,
   TRadialBarData,
+  DATE_FORMATTERS,
 } from "../client/types";
+import { unix2Date } from "../utils/timetools";
 
 interface ChartProps {
   chartType: EChartType;
   data: TChartData[];
   title: string | null;
-  // when inside a card, the chart should be constrained by height instead of width
-  constraintBy?: "height" | "width";
-  isStandalone?: boolean;
+  colorPalette?: TColorPalette;
 }
 
 const Chart: React.FC<ChartProps> = ({
   title,
   data,
   chartType,
-  constraintBy = "width",
-  isStandalone = true,
+  colorPalette = DEFAULT_COLOR_PALETTES[0],
 }) => {
+  const [titleColor, setTitleColor] = useState(colorPalette[0]);
+  useEffect(() => {
+    console.log("type: ", chartType, "color: ", colorPalette);
+  }, []);
   const renderChart = () => {
+    let currentColorIndex = 0;
+    const getRndColor = () => {
+      currentColorIndex += 1;
+      console.log("getRndColor: ", currentColorIndex % colorPalette.length);
+      return colorPalette[currentColorIndex % colorPalette.length];
+    };
+
     switch (chartType) {
       case EChartType.POLY_LINE:
         return (
           <LineChart
             data={data}
-            margin={{ top: 10, right: 10, left: -10, bottom: 10 }}
+            margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
           >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
               dataKey="timestamp"
               tickFormatter={(timestamp) =>
-                new Date(timestamp * 1000).toLocaleTimeString()
+                unix2Date(timestamp, DATE_FORMATTERS.HH_mm)
               }
             />
             <YAxis />
             <Tooltip />
             {/* <Legend /> */}
-            <Line type="monotone" dataKey="value" stroke="#8884d8" />
+            <Line type="linear" dataKey="value" stroke={getRndColor()} />
           </LineChart>
         );
       case EChartType.SMOOTH_LINE:
         return (
           <LineChart
             data={data}
-            margin={{ top: 10, right: 10, left: -10, bottom: 10 }}
+            margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
           >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
               dataKey="timestamp"
               tickFormatter={(timestamp) =>
-                new Date(timestamp * 1000).toLocaleTimeString()
+                unix2Date(timestamp, DATE_FORMATTERS.HH_mm)
               }
             />
             <YAxis />
@@ -76,46 +89,46 @@ const Chart: React.FC<ChartProps> = ({
             <Line
               type="monotone"
               dataKey="value"
-              stroke="#8884d8"
+              stroke={getRndColor()}
               strokeWidth={2}
               dot={false}
             />
           </LineChart>
         );
-      case EChartType.RADIAL_BAR:
+      case EChartType.RING:
         return (
-          <RadialBarChart
-            // innerRadius="10%"
-            // outerRadius="100%"
-            data={data as TRadialBarData[]}
-            startAngle={180}
-            endAngle={0}
-            margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
-          >
-            <RadialBar
-              label={{ fill: "#666", position: "insideStart" }}
-              dataKey="value"
-            />
-            <Legend
-              iconSize={10}
-              layout="vertical"
-              verticalAlign="middle"
-              align="right"
-            />
-            <Tooltip />
-          </RadialBarChart>
-        );
-      case EChartType.PIE:
-        return (
-          <PieChart margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+          <PieChart>
             <Pie
               data={data as TPieData[]}
               dataKey="value"
               nameKey="name"
               cx="50%"
               cy="50%"
+              innerRadius="60%"
+              outerRadius="80%"
+              startAngle={90}
+              endAngle={-270}
+            >
+              {(data as TPieData[]).map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={getRndColor()} />
+              ))}
+            </Pie>
+            <Tooltip />
+            <Legend />
+          </PieChart>
+        );
+      case EChartType.PIE:
+        return (
+          <PieChart margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+            <Pie
+              data={data as TPieData[]}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              color={getRndColor()}
               // outerRadius={100}
-              fill="#8884d8"
+              fill={getRndColor()}
               label
             />
             <Tooltip />
@@ -130,8 +143,15 @@ const Chart: React.FC<ChartProps> = ({
     <div
       className={`flex h-full w-full flex-col rounded-md border border-gray-300`}
     >
-      {title && <h2>{title}</h2>}
-      <ResponsiveContainer minHeight={150}  width={"100%"}>
+      {title && (
+        <h2
+          className={`p-1 text-center text-xl font-bold`}
+          style={{ color: titleColor }}
+        >
+          {title}
+        </h2>
+      )}
+      <ResponsiveContainer minHeight={150} width={"100%"}>
         {renderChart() || <>undefined</>}
       </ResponsiveContainer>
     </div>

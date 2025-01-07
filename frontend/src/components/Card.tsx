@@ -1,30 +1,40 @@
 import React, { useEffect } from "react";
-import { EChartType, TChartData } from "../client/types";
+import {
+  EChartType,
+  TColorPalette,
+  TChartData,
+  DEFAULT_COLOR_PALETTES,
+} from "../client/types";
 import Chart from "./Chart";
 
 interface ICardProps {
   title?: string;
   data?: string | TChartData[];
   type?: EChartType | "classic";
+  colorPalette?: TColorPalette;
 }
 
 const Card: React.FC<ICardProps> = ({
   title: title_ = "Default Title",
   data: data_ = "Default Data",
   type: cardType = "classic",
+  // title uses index 0 of colorPalette, pass the slice[1:] to Chart component
+  colorPalette = DEFAULT_COLOR_PALETTES[0],
 }) => {
   const [title, setTitle] = React.useState("");
-  const [data, setData] = React.useState<string | TChartData>("");
+  const [data, setData] = React.useState<string | TChartData[]>("");
   const [timeRange, setTimeRange] = React.useState();
   useEffect(() => {
     setTitle(title_);
     setData(data_);
+    return () => {};
   }, [title_, data_]);
+
   return (
     <div
       id="card-wrapper"
       className="flex max-h-72 min-h-36 flex-col justify-center rounded-md border border-gray-300 p-2"
-      style={{ boxShadow: "3px 3px 3px -4px #000000" }}
+      style={{ boxShadow: "3px 3px 3px -4px #000000", color: colorPalette[0] }}
     >
       {cardType === "classic" ? (
         <>
@@ -39,6 +49,7 @@ const Card: React.FC<ICardProps> = ({
               {typeof data === "string" ? data : "Invalid data"}
             </span>
           </div>
+          ƒ
         </>
       ) : (
         <div className="h-full w-full">
@@ -46,6 +57,7 @@ const Card: React.FC<ICardProps> = ({
             chartType={cardType}
             title={title}
             data={Array.isArray(data) ? data : []}
+            colorPalette={colorPalette}
           />
         </div>
       )}

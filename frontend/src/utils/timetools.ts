@@ -1,4 +1,4 @@
-const DATE_FORMAT_OPTIONS = {
+const FULL_DATE_FORMAT_OPTIONS = {
   year: "numeric",
   month: "2-digit",
   day: "2-digit",
@@ -95,13 +95,14 @@ export const GMT_TO_IANA: Record<TTimezone, TIanaTimezone> = {
 // convert unix timestamp to date string with timezone support
 export const unix2Date = (
   unix: number,
+  formatter: Intl.DateTimeFormatOptions = FULL_DATE_FORMAT_OPTIONS,
   timezone: TTimezone = "GMT+8",
 ): string => {
   const date = new Date(unix * 1000);
   const ianaTimeZone = GMT_TO_IANA[timezone]; // 将 GMT 时区转换为 IANA 时区
 
   return new Intl.DateTimeFormat("zh-CN", {
-    ...DATE_FORMAT_OPTIONS,
+    ...formatter,
     timeZone: ianaTimeZone,
   }).format(date);
 };

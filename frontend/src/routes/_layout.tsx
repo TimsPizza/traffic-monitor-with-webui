@@ -10,29 +10,32 @@ const Layout = () => {
     navigate("/dashboard");
   }, []);
   return (
-    <div id="layout" className="flex h-full w-full flex-col">
-      <div id="header-wrapper" className="border !border-red-300 p-1">
-        <header className="">
-          <Header />
-        </header>
+    <div id="layout" className="relative flex flex-row">
+      <div
+        id="sidebar-wrapper"
+        className="h-screen w-1/5 border !border-red-300 p-1"
+      >
+        <nav className="sticky left-0 top-0 z-50 h-full border !border-red-300 p-1">
+          <Nav />
+        </nav>
       </div>
       <div
         id="content-wrapper"
-        className="flex h-full w-full flex-row border !border-red-300"
+        className="flex h-full w-full flex-col border !border-red-300"
       >
-        <nav className="w-[15%] border !border-red-300 p-1">
-          <Nav />
-        </nav>
+        <header className="h-[8%] p-1">
+          <Header />
+        </header>
         <div
           id="layout-content-wrapper"
           className="flex-1 border !border-red-300 p-1"
         >
           <Outlet />
         </div>
+        <footer className="h-[8%] border !border-red-300 p-1">
+          <Footer />
+        </footer>
       </div>
-      <footer className="min-h-[8%] border !border-red-300 p-1">
-        <Footer />
-      </footer>
     </div>
   );
 };

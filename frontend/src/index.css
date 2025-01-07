@@ -13,6 +13,8 @@
 * {
   box-sizing: border-box;
 }
+html,
+body,
 #root {
   display: flex;
   flex-direction: column;
@@ -42,9 +44,6 @@ h1 {
   font-size: 3.2em;
   line-height: 1.1;
 }
-.recharts-wrapper {
-  width: 100% !important;
-  height: 100% !important;
+.recharts-surface {
+  overflow: visible !important;
 }
-
-
