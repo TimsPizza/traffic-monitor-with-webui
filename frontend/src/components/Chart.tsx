@@ -53,7 +53,7 @@ const Chart: React.FC<ChartProps> = ({
             />
             <YAxis />
             <Tooltip />
-            <Legend />
+            {/* <Legend /> */}
             <Line type="monotone" dataKey="value" stroke="#8884d8" />
           </LineChart>
         );
@@ -72,7 +72,7 @@ const Chart: React.FC<ChartProps> = ({
             />
             <YAxis />
             <Tooltip />
-            <Legend />
+            {/* <Legend /> */}
             <Line
               type="monotone"
               dataKey="value"
@@ -85,8 +85,8 @@ const Chart: React.FC<ChartProps> = ({
       case EChartType.RADIAL_BAR:
         return (
           <RadialBarChart
-            innerRadius="10%"
-            outerRadius="100%"
+            // innerRadius="10%"
+            // outerRadius="100%"
             data={data as TRadialBarData[]}
             startAngle={180}
             endAngle={0}
@@ -114,7 +114,7 @@ const Chart: React.FC<ChartProps> = ({
               nameKey="name"
               cx="50%"
               cy="50%"
-              outerRadius={100}
+              // outerRadius={100}
               fill="#8884d8"
               label
             />
@@ -131,7 +131,7 @@ const Chart: React.FC<ChartProps> = ({
       className={`flex h-full w-full flex-col rounded-md border border-gray-300`}
     >
       {title && <h2>{title}</h2>}
-      <ResponsiveContainer>
+      <ResponsiveContainer minHeight={150}  width={"100%"}>
         {renderChart() || <>undefined</>}
       </ResponsiveContainer>
     </div>

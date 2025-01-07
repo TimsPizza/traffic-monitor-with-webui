@@ -23,7 +23,7 @@ const Card: React.FC<ICardProps> = ({
   return (
     <div
       id="card-wrapper"
-      className="flex max-h-48 min-h-24 flex-col justify-center rounded-md border border-gray-300 p-2"
+      className="flex max-h-72 min-h-36 flex-col justify-center rounded-md border border-gray-300 p-2"
       style={{ boxShadow: "3px 3px 3px -4px #000000" }}
     >
       {cardType === "classic" ? (
