@@ -11,20 +11,26 @@ const Layout = () => {
   }, []);
   return (
     <div id="layout" className="flex h-full w-full flex-col">
-      <div className="">
+      <div id="header-wrapper" className="border !border-red-300 p-1">
         <header className="">
           <Header />
         </header>
       </div>
-      <div className="flex h-full w-full flex-row">
-        <nav className="w-[15%]">
+      <div
+        id="content-wrapper"
+        className="flex h-full w-full flex-row border !border-red-300"
+      >
+        <nav className="w-[15%] border !border-red-300 p-1">
           <Nav />
         </nav>
-        <div id="layout-content-wrapper" className="flex-1">
+        <div
+          id="layout-content-wrapper"
+          className="flex-1 border !border-red-300 p-1"
+        >
           <Outlet />
         </div>
       </div>
-      <footer className="min-h-[8%]">
+      <footer className="min-h-[8%] border !border-red-300 p-1">
         <Footer />
       </footer>
     </div>

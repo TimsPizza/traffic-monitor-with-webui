@@ -2,8 +2,8 @@ import React from "react";
 
 const Header = () => {
   return (
-    <div className="flex justify-between items-center h-[8%] w-full">
-      <div className="h-12 border border-gray-300 w-full flex items-center justify-center">
+    <div className="rounded-md border border-gray-300">
+      <div className="flex h-12 w-full items-center justify-center ">
         <span>Header PlaceHolder</span>
       </div>
     </div>

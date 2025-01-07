@@ -1,5 +1,5 @@
-import "./styles/tailwind.output.css";
 import "bootstrap/dist/css/bootstrap.min.css";
+import "./styles/tailwind.output.css";
 import { useState } from "react";
 import { RouterProvider } from "react-router-dom";
 import { router } from "./routes";
