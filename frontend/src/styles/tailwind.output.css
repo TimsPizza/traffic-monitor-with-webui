@@ -763,6 +763,14 @@ video {
   min-height: 8vh;
 }
 
+.min-h-\[18\%\] {
+  min-height: 18%;
+}
+
+.min-h-\[5\%\] {
+  min-height: 5%;
+}
+
 .w-full {
   width: 100%;
 }
@@ -815,6 +823,10 @@ video {
   min-width: 100%;
 }
 
+.min-w-\[224px\] {
+  min-width: 224px;
+}
+
 .flex-1 {
   flex: 1 1 0%;
 }
@@ -825,6 +837,10 @@ video {
 
 .cursor-pointer {
   cursor: pointer;
+}
+
+.resize {
+  resize: both;
 }
 
 .grid-cols-1 {

@@ -13,7 +13,7 @@ const Layout = () => {
     <div id="layout" className="relative flex flex-row">
       <div
         id="sidebar-wrapper"
-        className="h-screen w-1/5 border !border-red-300 p-1"
+        className="h-full w-1/5 min-w-[224px] border !border-red-300 p-1"
       >
         <nav className="sticky left-0 top-0 z-50 h-full border !border-red-300 p-1">
           <Nav />
@@ -21,9 +21,9 @@ const Layout = () => {
       </div>
       <div
         id="content-wrapper"
-        className="flex h-full w-full flex-col border !border-red-300"
+        className="flex w-full flex-col border !border-red-300"
       >
-        <header className="h-[8%] p-1">
+        <header className="p-1 min-h-[5%]">
           <Header />
         </header>
         <div

@@ -18,11 +18,11 @@ const Header = () => {
   }, []);
   return (
     <div
-      className={`h-full w-full rounded-md border border-gray-300`}
+      className={`flex h-full w-full items-center justify-center rounded-md border border-gray-300`}
       id="header-container"
       ref={headerRef}
     >
-      <span className="">Header PlaceHolder</span>
+      <span className="text-center">Header PlaceHolder</span>
     </div>
   );
 };
