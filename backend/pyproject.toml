@@ -18,6 +18,9 @@ py-spy = "^0.4.0"
 python-dotenv = "^1.0.1"
 pymongo = "^4.10.1"
 geoip2 = "^4.8.1"
+python-jose = "^3.3.0"
+passlib = "^1.7.4"
+python-multipart = "^0.0.20"
 
 
 [build-system]
