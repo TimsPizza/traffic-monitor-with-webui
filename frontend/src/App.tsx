@@ -16,6 +16,7 @@ const App = () => {
   const [mediaBreakPoint, setMediaBreakPoint] = useState<EMediaBreakpoints>(
     EMediaBreakpoints.lg,
   );
+
   useEffect(() => {
     const layoutElement = document.getElementById("layout");
     if (!layoutElement) return;
@@ -42,16 +43,15 @@ const App = () => {
       resizeObserver.disconnect();
     };
   }, []);
+
   return (
-    <>
-      <WindowSizeContext.Provider
-        value={{
-          breakpoint: mediaBreakPoint,
-        }}
-      >
-        <RouterProvider router={router} />
-      </WindowSizeContext.Provider>
-    </>
+    <WindowSizeContext.Provider
+      value={{
+        breakpoint: mediaBreakPoint,
+      }}
+    >
+      <RouterProvider router={router} />
+    </WindowSizeContext.Provider>
   );
 };
 
