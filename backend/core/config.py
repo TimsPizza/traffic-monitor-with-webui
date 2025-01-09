@@ -103,5 +103,20 @@ class LazyConfig:
         self._ensure_loaded()
         return os.getenv("BACKEND_HOST")
 
+    @property
+    def jwt_secret_key(self):
+        self._ensure_loaded()
+        return os.getenv("JWT_SECRET_KEY")
+
+    @property
+    def jwt_algorithm(self):
+        self._ensure_loaded()
+        return os.getenv("JWT_ALGORITHM", "HS256")
+
+    @property
+    def jwt_expire_minutes(self):
+        self._ensure_loaded()
+        return int(os.getenv("JWT_EXPIRE_MINUTES", 30))
+
 
 ENV_CONFIG = LazyConfig()

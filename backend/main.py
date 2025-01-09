@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 import os
 import sys
 from core.config import ENV_CONFIG
-from routes import CaptureRouter
+from routes import router
 
 
 @asynccontextmanager
@@ -16,7 +16,7 @@ async def life_span(app: FastAPI):
 
 
 app = FastAPI(lifespan=life_span)
-app.include_router(CaptureRouter)
+app.include_router(router)
 
 
 @app.get("/")

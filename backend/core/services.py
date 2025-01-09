@@ -4,6 +4,9 @@ import tarfile
 import tempfile
 import requests
 from typing import Union
+
+from core.AuthService import AuthService
+
 from .config import ENV_CONFIG
 import geoip2.database
 
@@ -95,3 +98,7 @@ class GeoIPSingleton:
         except Exception as e:
             cls._logger.error(f"Unexpected error loading GeoIP DB: {e}")
         return False
+
+
+# provide an instance
+authService = AuthService()
