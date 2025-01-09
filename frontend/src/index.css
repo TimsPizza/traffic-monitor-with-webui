@@ -9,6 +9,12 @@
   -moz-osx-font-smoothing: grayscale;
   height: 100%;
   width: 100%;
+  --bs-breakpoint-xs: 0;
+  --bs-breakpoint-sm: 640px;
+  --bs-breakpoint-md: 768px;
+  --bs-breakpoint-lg: 1024px;
+  --bs-breakpoint-xl: 1280px;
+  --bs-breakpoint-xxl: 1536px;
 }
 * {
   box-sizing: border-box;

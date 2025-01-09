@@ -1,11 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   LineChart,
   Line,
   PieChart,
   Pie,
-  RadialBarChart,
-  RadialBar,
   ResponsiveContainer,
   XAxis,
   YAxis,
@@ -22,7 +20,6 @@ import {
   TColorPalette,
   TChartData,
   TPieData,
-  TRadialBarData,
   DATE_FORMATTERS,
 } from "../client/types";
 import { unix2Date } from "../utils/timetools";
@@ -32,6 +29,7 @@ interface ChartProps {
   data: TChartData[];
   title: string | null;
   colorPalette?: TColorPalette;
+  bordered?: boolean;
 }
 
 const Chart: React.FC<ChartProps> = ({
@@ -39,19 +37,20 @@ const Chart: React.FC<ChartProps> = ({
   data,
   chartType,
   colorPalette = DEFAULT_COLOR_PALETTES[0],
+  bordered = true,
 }) => {
-  const [titleColor, setTitleColor] = useState(colorPalette[0]);
-  useEffect(() => {
-    console.log("type: ", chartType, "color: ", colorPalette);
-  }, []);
-  const renderChart = () => {
-    let currentColorIndex = 0;
-    const getRndColor = () => {
-      currentColorIndex += 1;
-      console.log("getRndColor: ", currentColorIndex % colorPalette.length);
-      return colorPalette[currentColorIndex % colorPalette.length];
-    };
+  // color palette usage
+  const backgroundColor = "#F3F4F6";
+  const titleColor = colorPalette[0];
+  const primaryFill = colorPalette[1];
+  const secondaryFill = colorPalette[2];
+  const accentColor = colorPalette[3];
+  const borderColor = "#0000004B";
+  const gradientColorStart = "#0062ff";
+  // const gradientColorMiddle = "	#61efff";
+  const gradientColorEnd = "#ffffff";
 
+  const renderChart = () => {
     switch (chartType) {
       case EChartType.POLY_LINE:
         return (
@@ -61,33 +60,43 @@ const Chart: React.FC<ChartProps> = ({
           >
             <defs>
               <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={getRndColor()} stopOpacity={0.8} />
                 <stop
-                  offset="95%"
-                  stopColor={getRndColor()}
-                  stopOpacity={0.2}
+                  offset="0%"
+                  stopColor={gradientColorStart}
+                  stopOpacity={0.9}
+                />
+                <stop
+                  offset="65%"
+                  stopColor={gradientColorStart}
+                  stopOpacity={0.4}
+                />
+                <stop
+                  offset="100%"
+                  stopColor={gradientColorEnd}
+                  stopOpacity={0.1}
                 />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray="3 3" stroke={borderColor} />
             <XAxis
               dataKey="timestamp"
               tickFormatter={(timestamp) =>
                 unix2Date(timestamp, DATE_FORMATTERS.HH_mm)
               }
+              stroke={borderColor}
             />
-            <YAxis />
+            <YAxis stroke={borderColor} />
             <Tooltip />
             <Area
               type="linear"
               dataKey="value"
-              stroke={getRndColor()}
+              stroke={accentColor}
               fill="url(#colorGradient)"
             />
-            {/* <Legend /> */}
-            <Line type="linear" dataKey="value" stroke={getRndColor()} />
+            <Line type="linear" dataKey="value" stroke={accentColor} />
           </AreaChart>
         );
+
       case EChartType.SMOOTH_LINE:
         return (
           <AreaChart
@@ -96,27 +105,30 @@ const Chart: React.FC<ChartProps> = ({
           >
             <defs>
               <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={getRndColor()} stopOpacity={0.8} />
-                <stop offset="95%" stopColor={getRndColor()} stopOpacity={0} />
+                <stop offset="0%" stopColor={primaryFill} stopOpacity={0.8} />
+                <stop offset="50%" stopColor={primaryFill} stopOpacity={0.5} />
+                <stop offset="100%" stopColor={secondaryFill} stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray="3 3" stroke={borderColor} />
             <XAxis
               dataKey="timestamp"
               tickFormatter={(timestamp) =>
                 unix2Date(timestamp, DATE_FORMATTERS.HH_mm)
               }
+              stroke={borderColor}
             />
-            <YAxis />
+            <YAxis stroke={borderColor} />
             <Tooltip />
             <Area
               type="monotone"
               dataKey="value"
-              stroke={getRndColor()}
+              stroke={accentColor}
               fill="url(#colorGradient)"
             />
           </AreaChart>
         );
+
       case EChartType.RING:
         return (
           <PieChart>
@@ -131,20 +143,24 @@ const Chart: React.FC<ChartProps> = ({
               startAngle={90}
               endAngle={-270}
             >
-              {(data as TPieData[]).map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={getRndColor()}
-                  style={{
-                    filter: `drop-shadow(0px 0px 5px ${colorPalette[index % colorPalette.length]}`,
-                  }}
-                />
-              ))}
+              {(data as TPieData[]).map((entry, index) => {
+                const colorIndex = index % colorPalette.length;
+                return (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={colorPalette[colorIndex]}
+                    style={{
+                      filter: `drop-shadow(0px 0px 5px ${accentColor})`,
+                    }}
+                  />
+                );
+              })}
             </Pie>
             <Tooltip />
             <Legend />
           </PieChart>
         );
+
       case EChartType.PIE:
         return (
           <PieChart margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
@@ -154,22 +170,28 @@ const Chart: React.FC<ChartProps> = ({
               nameKey="name"
               cx="50%"
               cy="50%"
-              color={getRndColor()}
-              // outerRadius={100}
-              fill={getRndColor()}
+              color={accentColor}
+              fill={primaryFill}
               label
             />
             <Tooltip />
             <Legend />
           </PieChart>
         );
+
       default:
         return null;
     }
   };
+
   return (
     <div
-      className={`flex h-full w-full flex-col rounded-md border border-gray-300`}
+      className={`flex h-full w-full flex-col`}
+      style={{
+        backgroundColor: backgroundColor,
+        border: bordered ? `1px solid ${borderColor}` : "none",
+        borderRadius: bordered ? "0.375rem" : "0",
+      }}
     >
       {title && (
         <h2

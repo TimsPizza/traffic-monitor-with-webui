@@ -33,7 +33,7 @@ const Card: React.FC<ICardProps> = ({
   return (
     <div
       id="card-wrapper"
-      className="flex max-h-72 min-h-36 flex-col justify-center rounded-md border border-gray-300 p-2"
+      className={`flex max-h-72 min-h-36 flex-col justify-center rounded-md border border-gray-300 bg-[#F3F4F6]`}
       style={{ boxShadow: "3px 3px 3px -4px #000000", color: colorPalette[0] }}
     >
       {cardType === "classic" ? (
@@ -58,6 +58,7 @@ const Card: React.FC<ICardProps> = ({
             title={title}
             data={Array.isArray(data) ? data : []}
             colorPalette={colorPalette}
+            bordered={false}
           />
         </div>
       )}

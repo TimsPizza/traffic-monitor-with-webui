@@ -1,38 +1,68 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import Nav from "../components/Nav";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
+import { WindowSizeContext } from "../App";
+import { EMediaBreakpoints } from "../client/types";
 
 const Layout = () => {
   const navigate = useNavigate();
+  const { breakpoint } = React.useContext(WindowSizeContext);
+  const [shouldSidebarCollapse, setShouldSidebarCollapse] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     navigate("/dashboard");
   }, []);
+  useEffect(() => {
+    const shouldCollapse = breakpoint <= EMediaBreakpoints.lg;
+    setShouldSidebarCollapse(shouldCollapse);
+    if (!shouldCollapse) {
+      setShowOverlay(false);
+    }
+  }, [breakpoint]);
+
   return (
     <div id="layout" className="relative flex flex-row">
       <div
+        id="overlay"
+        className={`fixed inset-0 z-40 bg-black bg-opacity-50 transition-opacity duration-200 ${showOverlay ? "opacity-100" : "pointer-events-none opacity-0"}`}
+        onClick={() => {
+          setShouldSidebarCollapse(true);
+          setShowOverlay(false);
+        }}
+      ></div>
+      <div
         id="sidebar-wrapper"
-        className="h-full w-1/5 min-w-[224px] border !border-red-300 p-1"
+        ref={sidebarRef}
+        className={`fixed h-screen w-[256px] overflow-hidden rounded-r-lg border border-gray-300 transition-transform duration-200 ease-linear lg:static lg:h-full lg:translate-x-0 lg:rounded-l-lg ${shouldSidebarCollapse ? "-translate-x-[256px]" : "z-50"} `}
       >
-        <nav className="sticky left-0 top-0 z-50 h-full border !border-red-300 p-1">
+        <nav className="left-0 top-0 z-50 h-full w-full">
           <Nav />
         </nav>
       </div>
       <div
         id="content-wrapper"
-        className="flex w-full flex-col border !border-red-300"
+        className="flex w-full flex-1 flex-col overflow-y-auto"
       >
-        <header className="p-1 min-h-[5%]">
+        <header className="relative min-h-[5%] p-1">
+          <div
+            id="sidebar-toggle"
+            className={`absolute left-0 top-1/2 z-50 h-8 w-8 -translate-y-1/2 translate-x-1/2 rounded-lg border border-gray-300 text-center transition-transform duration-300 ${shouldSidebarCollapse ? "" : "hidden"} lg:hidden`}
+            onClick={() => {
+              setShouldSidebarCollapse(false);
+              setShowOverlay(true);
+            }}
+          >
+            <i className={`bi bi-list text-xl`} />
+          </div>
           <Header />
         </header>
-        <div
-          id="layout-content-wrapper"
-          className="flex-1 border !border-red-300 p-1"
-        >
+        <div id="layout-content-wrapper" className="flex-1 p-1">
           <Outlet />
         </div>
-        <footer className="h-[8%] border !border-red-300 p-1">
+        <footer className="h-[8%] p-1">
           <Footer />
         </footer>
       </div>

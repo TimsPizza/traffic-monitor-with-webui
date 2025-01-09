@@ -23,6 +23,7 @@ const Header = () => {
       ref={headerRef}
     >
       <span className="text-center">Header PlaceHolder</span>
+      <i className="bi bi-house text-2xl ml-4"></i>
     </div>
   );
 };

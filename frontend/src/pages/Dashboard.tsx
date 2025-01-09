@@ -18,13 +18,18 @@ const Dashboard = () => {
       id="dashboard-wrapper"
       className="h-full w-full rounded-md border border-gray-300"
     >
-      <Row className="h-2/5">
-        <Col id="cards-wrapper" md={12} lg={6} className="grid grid-cols-2 gap-2">
+      <Row className="px-2 mt-2">
+        <Col
+          id="cards-wrapper"
+          md={12}
+          lg={6}
+          className="mb-2 grid grid-cols-2 gap-2"
+        >
           <Card
             type={EChartType.POLY_LINE}
             title="PolyLine Chart Card Test"
             data={polylineData}
-            colorPalette={DEFAULT_COLOR_PALETTES[0]}
+            colorPalette={DEFAULT_COLOR_PALETTES[3]}
           />
           <Card
             type={EChartType.RING}
@@ -45,7 +50,7 @@ const Dashboard = () => {
             colorPalette={DEFAULT_COLOR_PALETTES[3]}
           />
         </Col>
-        <Col id="charts-container" md={12} lg={6}>
+        <Col id="charts-container" md={12} lg={6} className="mb-2">
           <Chart
             chartType={EChartType.SMOOTH_LINE}
             title="SmoothLine Card Test"
@@ -53,7 +58,7 @@ const Dashboard = () => {
             colorPalette={DEFAULT_COLOR_PALETTES[3]}
           />
         </Col>
-        <Col id="table-wrapper" sm={6} md={12}>
+        <Col id="table-wrapper" sm={6} md={12} className="mb-2">
           <Tables data={accessRecordData} />
         </Col>
       </Row>

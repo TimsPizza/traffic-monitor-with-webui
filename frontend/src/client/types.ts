@@ -33,14 +33,31 @@ export type TSmoothLineData = TPolyLineData;
 
 export type TColorPalette = string[];
 
+/**
+ * 定义标准颜色调色板
+ * 每个调色板包含6种颜色，用于不同UI元素：
+ * 0: 标题颜色 (Title color)
+ * 1: 主要填充色 (Primary fill color)
+ * 2: 次要填充色 (Secondary fill color) 
+ * 3: 强调色 (Accent color)
+ * 4: 背景色 (Background color)
+ * 5: 边框/分割线颜色 (Border/Divider color)
+ */
 export const DEFAULT_COLOR_PALETTES: TColorPalette[] = [
-  // return shuffled array of colors
-  ["#16C47F", "#FFD65A", "#FF9D23", "#F93827"].sort(() => Math.random() - 0.5),
-  ["#FF9D23", "#FFD65A", "#16C47F", "#F93827"].sort(() => Math.random() - 0.5),
-  ["#FFD65A", "#16C47F", "#FF9D23", "#F93827"].sort(() => Math.random() - 0.5),
-  ["#F93827", "#FFD65A", "#FF9D23", "#16C47F"].sort(() => Math.random() - 0.5),
-  ["#FB4141", "#FFC145", "#ECE852", "#5CB338"].sort(() => Math.random() - 0.5),
-  ["FF8383", "#FFF574", "#A1D6CB", "#A19AD3"].sort(() => Math.random() - 0.5),
+  // 现代UI调色板 (Modern UI palette)
+  ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#f3f4f6", "#e5e7eb"],
+  
+  // 深色主题调色板 (Dark theme palette)
+  ["#60a5fa", "#34d399", "#fbbf24", "#f87171", "#1f2937", "#374151"],
+  
+  // 柔和色调调色板 (Pastel palette)
+  ["#93c5fd", "#6ee7b7", "#fcd34d", "#fca5a5", "#f9fafb", "#e5e7eb"],
+  
+  // 高对比度调色板 (High contrast palette)
+  ["#2563eb", "#059669", "#d97706", "#dc2626", "#ffffff", "#d1d5db"],
+  
+  // 色盲友好调色板 (Colorblind-friendly palette)
+  ["#1f77b4", "#2ca02c", "#ff7f0e", "#d62728", "#f7f7f7", "#cccccc"]
 ];
 
 // End of type definitions for charts
@@ -90,4 +107,3 @@ export enum EMediaBreakpoints {
   xl = 1280,
   xxl = 1536,
 }
-

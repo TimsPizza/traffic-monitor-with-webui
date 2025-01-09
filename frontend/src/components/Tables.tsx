@@ -55,7 +55,7 @@ const Tables: React.FC<TableProps> = ({ data }) => {
   });
 
   return (
-    <div className="flex h-full w-full flex-col p-4">
+    <div className="flex h-full w-full flex-col">
       <div className="overflow-x-auto rounded-lg border">
         <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
           <table className="w-full divide-y divide-gray-200">
@@ -78,8 +78,8 @@ const Tables: React.FC<TableProps> = ({ data }) => {
               ))}
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white">
-              {table.getRowModel().rows.map((row) => (
-                <tr key={row.id} className="hover:bg-gray-50">
+              {table.getRowModel().rows.map((row, index) => (
+                <tr key={row.id} className={`hover:bg-gray-50 ${index % 2 ? "bg-gray-100" : "bg-white"}`}>
                   {row.getVisibleCells().map((cell) => (
                     <td
                       key={cell.id}

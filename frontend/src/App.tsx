@@ -1,5 +1,3 @@
-import "bootstrap/dist/css/bootstrap.min.css";
-import "./styles/tailwind.output.css";
 import { createContext, useEffect, useState } from "react";
 import { RouterProvider } from "react-router-dom";
 import { router } from "./routes";
@@ -9,7 +7,7 @@ interface IWindowSizeContext {
   breakpoint: EMediaBreakpoints;
 }
 
-const WindowSizeContext: React.Context<IWindowSizeContext> =
+export const WindowSizeContext: React.Context<IWindowSizeContext> =
   createContext<IWindowSizeContext>({
     breakpoint: EMediaBreakpoints.lg,
   });
@@ -19,22 +17,29 @@ const App = () => {
     EMediaBreakpoints.lg,
   );
   useEffect(() => {
-    const resizeHandler = () => {
-      if (window.innerWidth < 576) {
-        setMediaBreakPoint(EMediaBreakpoints.sm);
-      } else if (window.innerWidth < 768) {
-        setMediaBreakPoint(EMediaBreakpoints.md);
-      } else if (window.innerWidth < 992) {
-        setMediaBreakPoint(EMediaBreakpoints.lg);
-      } else if (window.innerWidth < 1200) {
-        setMediaBreakPoint(EMediaBreakpoints.xl);
-      } else {
-        setMediaBreakPoint(EMediaBreakpoints.xxl);
+    const layoutElement = document.getElementById("layout");
+    if (!layoutElement) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const width = entry.contentRect.width;
+        if (width < EMediaBreakpoints.sm) {
+          setMediaBreakPoint(EMediaBreakpoints.sm);
+        } else if (width < EMediaBreakpoints.md) {
+          setMediaBreakPoint(EMediaBreakpoints.md);
+        } else if (width < EMediaBreakpoints.lg) {
+          setMediaBreakPoint(EMediaBreakpoints.lg);
+        } else if (width < EMediaBreakpoints.xl) {
+          setMediaBreakPoint(EMediaBreakpoints.xl);
+        } else if (width < EMediaBreakpoints.xxl) {
+          setMediaBreakPoint(EMediaBreakpoints.xxl);
+        }
       }
-    };
-    window.addEventListener("resize", resizeHandler);
+    });
+
+    resizeObserver.observe(layoutElement);
     return () => {
-      window.removeEventListener("resize", resizeHandler);
+      resizeObserver.disconnect();
     };
   }, []);
   return (
