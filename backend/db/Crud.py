@@ -3,18 +3,20 @@ from typing import List, Optional
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
+from models.Filter import Protocol
+from db.Client import MongoConnectionSingleton
 from core.services import ENV_CONFIG
 from packet.Packet import ProcessedPacket
 
 
 class PacketDB:
-    def __init__(
-        self, uri: str = ENV_CONFIG.database_uri, db_name: str = "traffic_analyzer"
-    ):
-        self.client = MongoClient(uri)
+    def __init__(self):
+        self.client = MongoConnectionSingleton.get_instance()
+        self.db: Database = self.client.get_database(ENV_CONFIG.database_name)
 
-        self.db: Database = self.client[db_name]
-        self.packets_collection: Collection = self.db.packets
+        self.packets_collection: Collection = self.db.get_collection(
+            ENV_CONFIG.captured_packet_collection_name
+        )
         self.logger = logging.getLogger(self.__class__.__name__)
 
         # Create indexes for better query performance
@@ -60,31 +62,50 @@ class PacketDB:
             self.logger.error(f"Error inserting multiple packets: {e}")
             return 0
 
-    def find_packets_by_ip(self, ip_address: str) -> List[ProcessedPacket]:
-        """Find all packets from a specific IP address"""
+    def find_packets_by_ip(
+        self, ip_address: str, page: int = 1, page_size: int = 50
+    ) -> List[ProcessedPacket]:
+        """Find all packets from a specific IP address with pagination"""
         try:
-            cursor = self.packets_collection.find({"source_ip": ip_address})
+            skip = (page - 1) * page_size
+            cursor = (
+                self.packets_collection.find({"source_ip": ip_address})
+                .skip(skip)
+                .limit(page_size)
+            )
             return [self._create_packet_from_dict(doc) for doc in cursor]
         except Exception as e:
             self.logger.error(f"Error finding packets by IP: {e}")
             return []
 
-    def find_packets_by_protocol(self, protocol: str) -> List[ProcessedPacket]:
-        """Find all packets with a specific protocol"""
+    def find_packets_by_protocol(
+        self, protocol: str, page: int = 1, page_size: int = 50
+    ) -> List[ProcessedPacket]:
+        """Find all packets with a specific protocol with pagination"""
         try:
-            cursor = self.packets_collection.find({"protocol": protocol})
+            skip = (page - 1) * page_size
+            cursor = (
+                self.packets_collection.find({"protocol": protocol})
+                .skip(skip)
+                .limit(page_size)
+            )
             return [self._create_packet_from_dict(doc) for doc in cursor]
         except Exception as e:
             self.logger.error(f"Error finding packets by protocol: {e}")
             return []
 
     def find_packets_by_timerange(
-        self, start_time: float, end_time: float
+        self, start_time: float, end_time: float, page: int = 1, page_size: int = 50
     ) -> List[ProcessedPacket]:
-        """Find all packets within a specific time range"""
+        """Find all packets within a specific time range with pagination"""
         try:
-            cursor = self.packets_collection.find(
-                {"timestamp": {"$gte": start_time, "$lte": end_time}}
+            skip = (page - 1) * page_size
+            cursor = (
+                self.packets_collection.find(
+                    {"timestamp": {"$gte": start_time, "$lte": end_time}}
+                )
+                .skip(skip)
+                .limit(page_size)
             )
             return [self._create_packet_from_dict(doc) for doc in cursor]
         except Exception as e:
@@ -120,3 +141,22 @@ class PacketDB:
 
 
 MONGO_DB = PacketDB()
+
+
+# Export query methods
+async def get_packets_by_time_range(
+    start_time: float, end_time: float, page: int = 1, page_size: int = 50
+) -> List[ProcessedPacket]:
+    return MONGO_DB.find_packets_by_timerange(start_time, end_time, page, page_size)
+
+
+async def get_packets_by_protocol(
+    protocol: str, page: int = 1, page_size: int = 50
+) -> List[ProcessedPacket]:
+    return MONGO_DB.find_packets_by_protocol(protocol, page, page_size)
+
+
+async def get_packets_by_source_ip(
+    ip_address: str, page: int = 1, page_size: int = 50
+) -> List[ProcessedPacket]:
+    return MONGO_DB.find_packets_by_ip(ip_address, page, page_size)

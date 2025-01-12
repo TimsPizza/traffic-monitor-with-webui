@@ -7,15 +7,26 @@ from pydantic import BaseModel, Field, field_validator, ValidationError
 import ipaddress
 
 
-def validate_cidr(value: str) -> str:
-    try:
-        ipaddress.ip_network(value, strict=False)
-        return value
-    except ValueError as e:
-        raise ValueError(f"Invalid CIDR: {value}") from e
+class CIDRString(str):
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type, handler):
+        from pydantic_core import core_schema
 
+        return core_schema.no_info_after_validator_function(
+            cls.validate_cidr,
+            core_schema.str_schema(),
+            serialization=core_schema.plain_serializer_function_ser_schema(
+                lambda instance: str(instance)
+            ),
+        )
 
-CIDRString = Annotated[str, Field(..., validator=validate_cidr)]
+    @staticmethod
+    def validate_cidr(value: str) -> str:
+        try:
+            ipaddress.ip_network(value, strict=False)
+            return value
+        except ValueError as e:
+            raise ValueError(f"Invalid CIDR: {value}") from e
 
 
 IPOrCIDR = Union[ipaddress.IPv4Address, ipaddress.IPv6Address, CIDRString]
@@ -56,6 +67,6 @@ class CaptureFilterRecord(BaseModel):
             return ipaddress.ip_address(value)
         except ValueError:
             try:
-                return validate_cidr(value)
+                return CIDRString.validate_cidr(value)
             except ValueError as e:
                 raise ValueError(f"Invalid IP or CIDR: {value}") from e

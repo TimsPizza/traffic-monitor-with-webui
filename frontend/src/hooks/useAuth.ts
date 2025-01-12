@@ -1,27 +1,44 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import useToast from "./useToast";
+import { AuthService } from "../client/services/services";
+import { useMutation, useQuery } from "react-query";
+import { TLoginForm, TUser } from "../client/models/models";
 
 export function useAuth() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(false);
   const navigate = useNavigate();
+  const toast = useToast({
+    position: "top-right",
+    autoClose: 2000,
+    closeOnClick: true,
+    hideProgressBar: true,
+    pauseOnHover: true,
+  });
+  const isLoggedIn = () => {
+    return localStorage.getItem("access_token") !== null;
+  };
+  const login = async (formData: TLoginForm) => {
+    const response = await AuthService.login(formData);
+    localStorage.setItem("access_token", response.access_token);
+  };
+  const { data: user, isLoading } = useQuery({
+    queryKey: ["auth"],
+    queryFn: () => {
+      AuthService.readUser;
+    },
+    enabled: isLoggedIn(),
+  });
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const token = localStorage.getItem('access_token');
-        setIsAuthenticated(!!token);
-      } catch (error) {
-        console.error('Authentication check failed:', error);
-        setIsAuthenticated(false);
-        navigate('/login');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkAuth();
-  }, [navigate]);
-
-  return { isAuthenticated, isLoading };
+  const loginMutation = useMutation({
+    mutationFn: login,
+    onSuccess: () => {
+      toast.success("Login successful");
+      navigate("/dashboard");
+    },
+    onError: () => {
+      toast.error("Login failed");
+    },
+  });
+  return { user, isLoading, isLoggedIn, loginMutation };
 }

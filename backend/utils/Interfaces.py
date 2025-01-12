@@ -42,13 +42,15 @@ class BaseDynamicQueueResizeStrategy(ABC):
     @abstractmethod
     def on_shrink(self) -> None:
         pass
-    
+
+
 @dataclass
 class ConsumerMetrics:
     avg_batch_size: float = 0
     avg_wait_time: float = 0
     processing_delay: float = 0
     processed_packets: int = 0
+    total_processed: int = 0
     packet_size_sum: int = 0
     ip_packet_size_sum: int = 0
     handshake_count: int = 0
@@ -74,6 +76,7 @@ class DynamicQueueMetrics:
     current_queue_max_size: int = 0.0
     resize_frequency: float = 0.0
     avg_load: float = 0.0
+
 
 @dataclass
 class DoubleBufferQueueMetrics:

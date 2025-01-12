@@ -1,9 +1,13 @@
 import logging
+from typing import Any, List
 from dotenv import load_dotenv
 import os
 
 
 class LazyConfig:
+    captured_packet_collection_name = "captured_packets"
+    user_collection_name = "users"
+
     def __init__(self):
         self._loaded = False
 
@@ -39,6 +43,11 @@ class LazyConfig:
     def database_password(self):
         self._ensure_loaded()
         return os.getenv("DATABASE_PASSWORD")
+
+    @property
+    def database_name(self):
+        self._ensure_loaded()
+        return os.getenv("DATABASE_NAME")
 
     @property
     def log_level(self):
@@ -92,12 +101,12 @@ class LazyConfig:
     def buffer_shrink_factor(self):
         self._ensure_loaded()
         return float(os.getenv("SHRINK_FACTOR"))
-    
+
     @property
     def backend_port(self):
         self._ensure_loaded()
         return int(os.getenv("BACKEND_PORT"))
-    
+
     @property
     def backend_host(self):
         self._ensure_loaded()
@@ -117,6 +126,20 @@ class LazyConfig:
     def jwt_expire_minutes(self):
         self._ensure_loaded()
         return int(os.getenv("JWT_EXPIRE_MINUTES", 30))
+
+    @property
+    def cors_origins(self) -> List[str]:
+        self._ensure_loaded()
+        cors_string = os.getenv("BACKEND_CORS_ORIGINS", "*")
+        cors_list = LazyConfig._parse_cors(cors_string)
+        return cors_list
+
+    def _parse_cors(v: Any) -> list[str] | str:
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",")]
+        elif isinstance(v, list | str):
+            return v
+        raise ValueError(v)
 
 
 ENV_CONFIG = LazyConfig()

@@ -2,6 +2,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.logger import logger
 from contextlib import asynccontextmanager
+from starlette.middleware.cors import CORSMiddleware
 import os
 import sys
 from core.config import ENV_CONFIG
@@ -17,6 +18,14 @@ async def life_span(app: FastAPI):
 
 app = FastAPI(lifespan=life_span)
 app.include_router(router)
+if ENV_CONFIG.cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=ENV_CONFIG.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 
 @app.get("/")
@@ -35,4 +44,9 @@ def check_root():
 if __name__ == "__main__":
     check_root()
     # uvicorn.run("main:app", host="0.0.0.0", port=8000)
-    uvicorn.run("main:app", host=ENV_CONFIG.backend_host, port=ENV_CONFIG.backend_port, reload=True)
+    uvicorn.run(
+        "main:app",
+        host=ENV_CONFIG.backend_host,
+        port=ENV_CONFIG.backend_port,
+        reload=True,
+    )

@@ -1,21 +1,24 @@
-import { useForm, SubmitHandler } from 'react-hook-form'
-
-type LoginForm = {
-  username: string
-  password: string
-}
+import { useForm, SubmitHandler } from "react-hook-form";
+import { AuthService } from "../client/services/services";
+import { TLoginForm } from "../client/models/models";
+import { useAuth } from "../hooks/useAuth";
 
 export default function LoginPage() {
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginForm>()
+  } = useForm<TLoginForm>();
+  
+  const {loginMutation} = useAuth();
 
-  const onSubmit: SubmitHandler<LoginForm> = (data) => {
-    console.log(data)
-    // TODO: 添加登录逻辑
-  }
+  const onSubmit: SubmitHandler<TLoginForm> = (formData) => {
+    try {
+      loginMutation.mutate(formData);
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
@@ -29,45 +32,55 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="username"
+              className="block text-sm font-medium text-gray-700"
+            >
               Username
             </label>
             <div className="mt-1">
               <input
                 id="username"
                 type="text"
-                {...register('username', {
-                  required: 'Username is required',
+                {...register("username", {
+                  required: "Username is required",
                 })}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                 placeholder="username"
               />
               {errors.username && (
-                <p className="mt-1 text-sm text-red-500">{errors.username.message}</p>
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.username.message}
+                </p>
               )}
             </div>
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700"
+            >
               Password
             </label>
             <div className="mt-1">
               <input
                 id="password"
                 type="password"
-                {...register('password', {
-                  required: 'Password is required',
+                {...register("password", {
+                  required: "Password is required",
                   minLength: {
                     value: 8,
-                    message: 'Password must be at least 8 characters',
+                    message: "Password must be at least 8 characters",
                   },
                 })}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                 placeholder="password"
               />
               {errors.password && (
-                <p className="mt-1 text-sm text-red-500">{errors.password.message}</p>
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.password.message}
+                </p>
               )}
             </div>
           </div>
@@ -83,5 +96,5 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
-  )
+  );
 }

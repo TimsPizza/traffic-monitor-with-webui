@@ -1,11 +1,7 @@
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { register } from "../client/api/auth";
-
-interface SignUpForm {
-  username: string;
-  password: string;
-}
+import { AuthService } from "../client/services/services";
+import { TSignUpForm } from "../client/models/models";
 
 export default function SignUp() {
   const {
@@ -13,13 +9,15 @@ export default function SignUp() {
     handleSubmit,
     formState: { errors },
     setError: setFormError,
-  } = useForm<SignUpForm>();
+  } = useForm<TSignUpForm>();
   const navigate = useNavigate();
 
-  const onSubmit = async (data: SignUpForm) => {
+  const onSubmit = async (formData: TSignUpForm) => {
     try {
-      await register(data.username, data.password);
-      navigate("/login");
+      const response = await AuthService.signUp(formData);
+      if (response.username) {
+        navigate("/login");
+      }
     } catch (err) {
       setFormError("root", {
         type: "manual",

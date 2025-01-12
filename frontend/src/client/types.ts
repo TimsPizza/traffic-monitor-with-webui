@@ -107,3 +107,14 @@ export enum EMediaBreakpoints {
   xl = 1280,
   xxl = 1536,
 }
+
+export type TQueryType = 'time' | 'protocol' | 'source-ip'
+
+export type TQueryParams = {
+  startTime?: number
+  endTime?: number
+  protocol?: string
+  ipAddress?: string
+  page?: number
+  pageSize?: number
+}
