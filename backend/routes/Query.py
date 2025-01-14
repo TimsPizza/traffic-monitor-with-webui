@@ -17,6 +17,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 crud_service = CrudService()
 
+
 @router.get("/time", response_model=List[FullPacket])
 async def query_by_time(
     start_time: float,
@@ -38,6 +39,7 @@ async def query_by_time(
     """
     return crud_service.find_packets_by_timerange(start_time, end_time, page, page_size)
 
+
 @router.get("/protocol", response_model=List[FullPacket])
 async def query_by_protocol(
     protocol: str,
@@ -56,6 +58,7 @@ async def query_by_protocol(
         匹配协议类型的数据包列表
     """
     return crud_service.find_packets_by_protocol(protocol, page, page_size)
+
 
 @router.get("/source-ip", response_model=List[FullPacket])
 async def query_by_source_ip(
@@ -76,6 +79,7 @@ async def query_by_source_ip(
     """
     return crud_service.find_packets_by_ip(ip_address, page, page_size)
 
+
 @router.get("/network-stats", response_model=NetworkStats)
 async def get_network_stats(
     start_time: float,
@@ -93,7 +97,8 @@ async def get_network_stats(
     """
     return crud_service.get_network_stats(start_time, end_time)
 
-@router.get("/protocol-analysis", response_model=ProtocolAnalysis)
+
+@router.get("/protocol-analysis", response_model=List[ProtocolAnalysis])
 async def get_protocol_analysis(
     start_time: float,
     end_time: float,
@@ -110,6 +115,7 @@ async def get_protocol_analysis(
     """
     return crud_service.get_protocol_analysis(start_time, end_time)
 
+
 @router.get("/top-source-ips", response_model=List[TopSourceIP])
 async def get_top_source_ips(
     limit: int = Query(10, ge=1, le=100, description="返回数量"),
@@ -125,7 +131,8 @@ async def get_top_source_ips(
     """
     return crud_service.get_top_source_ips(limit)
 
-@router.get("/protocol-distribution", response_model=ProtocolDistribution)
+
+@router.get("/protocol-distribution", response_model=List[ProtocolDistribution])
 async def get_protocol_distribution(
     start_time: float,
     end_time: float,
@@ -141,6 +148,7 @@ async def get_protocol_distribution(
         协议分布信息
     """
     return crud_service.get_protocol_distribution(start_time, end_time)
+
 
 @router.get("/traffic-summary", response_model=TrafficSummary)
 async def get_traffic_summary(
@@ -158,6 +166,7 @@ async def get_traffic_summary(
         流量摘要信息
     """
     return crud_service.get_traffic_summary(start_time, end_time)
+
 
 @router.get("/time-series", response_model=TimeSeriesData)
 async def get_time_series_data(

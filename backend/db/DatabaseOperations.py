@@ -6,7 +6,15 @@ from pymongo.database import Database
 from packet.Packet import ProcessedPacket
 from db.Client import MongoConnectionSingleton
 from core.services import ENV_CONFIG
-from models.Dtos import NetworkStats, TimeRange, TimeSeriesData, ProtocolDistribution
+from models.Dtos import (
+    NetworkStats,
+    ProtocolAnalysis,
+    TimeRange,
+    TimeSeriesData,
+    ProtocolDistribution,
+    TopSourceIP,
+    TrafficSummary,
+)
 
 
 class DatabaseOperations:
@@ -151,107 +159,133 @@ class DatabaseOperations:
                     }
                 },
             ]
-            result = self.packets_collection.aggregate(pipeline)
-            if not result:
+            results = list(self.packets_collection.aggregate(pipeline))[0]
+            print(results)
+            if not results:
                 return NetworkStats()
 
             # Get protocol distribution
             protocol_dist = self.get_protocol_distribution(start_time, end_time)
+            print(protocol_dist)
 
             return NetworkStats(
-                total_bytes=result.get("total_bytes", 0),
-                avg_packet_size=result.get("avg_packet_size", 0),
-                protocol_distribution=protocol_dist if protocol_dist else [],
-                total_packets=result.get("total_packets", 0),
+                total_bytes=results["total_bytes"],
+                avg_packet_size=results["avg_packet_size"],
+                protocol_distribution=protocol_dist,
+                total_packets=results["total_packets"],
             )
         except Exception as e:
             self.logger.error(f"Error getting network stats: {e}")
             return NetworkStats()
 
-    def get_protocol_analysis(self, start_time: float, end_time: float) -> dict:
+    def get_protocol_analysis(
+        self, start_time: float, end_time: float
+    ) -> List[ProtocolAnalysis]:
         """Get protocol analysis for a given time range"""
         try:
             pipeline = [
+                # 第一阶段：过滤时间段内的数据
                 {"$match": {"timestamp": {"$gte": start_time, "$lte": end_time}}},
+                # 第二阶段：按 protocol 分组，统计总数据包数、总字节数、源 IP 列表、端口列表
                 {
                     "$group": {
-                        "_id": "$protocol",
-                        "count": {"$sum": 1},
-                        "total_bytes": {"$sum": "$length"},
+                        "_id": "$protocol",  # 按协议分组
+                        "packet_count": {"$sum": 1},  # 统计该协议的总数据包数
+                        "total_bytes": {"$sum": "$length"},  # 统计该协议的总字节数
                         "source_ips": {
-                            "$push": {
-                                "ip": "$source_ip",
-                                "count": 1,
-                                "total_bytes": "$length",
-                            }
+                            "$addToSet": "$source_ip"
+                        },  # 收集所有源 IP（去重）
+                        "ports": {"$addToSet": "$port"},  # 收集所有端口（去重）
+                    }
+                },
+                # 第三阶段：计算平均数据包大小，并整理输出格式
+                {
+                    "$project": {
+                        "_id": 0,  # 移除 _id 字段
+                        "protocol": "$_id",  # 协议名称
+                        "packet_count": 1,  # 总数据包数
+                        "source_ips": 1,  # 源 IP 列表
+                        "ports": 1,  # 端口列表
+                        "avg_packet_size": {
+                            "$divide": [
+                                "$total_bytes",
+                                "$packet_count",
+                            ]  # 计算平均数据包大小
                         },
                     }
                 },
             ]
             results = list(self.packets_collection.aggregate(pipeline))
+
             # Convert protocols list to dictionary
-            protocol_dict = {
-                r["_id"]: {
-                    "packet_count": r["count"],
-                    "total_bytes": r["total_bytes"],
-                    "source_ips": {
-                        s["ip"]: {
-                            "packet_count": s["count"],
-                            "total_bytes": s["total_bytes"],
-                            "percentage": (
-                                s["count"] / r["count"] if r["count"] > 0 else 0
-                            ),
-                        }
-                        for s in r["source_ips"]
-                    },
-                    "ports": {},
-                    "avg_packet_size": (
-                        r["total_bytes"] / r["count"] if r["count"] > 0 else 0
-                    ),
-                    "time_range": {"start": start_time, "end": end_time},
-                }
+            return [
+                ProtocolAnalysis(
+                    protocol=r["protocol"],
+                    avg_packet_size=r["avg_packet_size"],
+                    ports=r["ports"],
+                    source_ips=r["source_ips"],
+                    packet_count=r["packet_count"],
+                )
                 for r in results
-            }
-
-            total_packets = sum(r["count"] for r in results)
-            total_bytes = sum(r["total_bytes"] for r in results)
-
-            from models.Dtos import ProtocolAnalysis
-
-            return ProtocolAnalysis(
-                timestamp=start_time,
-                packet_count=total_packets,
-                total_bytes=total_bytes,
-                protocols=protocol_dict,
-                intervals=[],
-                time_range=TimeRange(start=start_time, end=end_time),
-            )
+            ]
         except Exception as e:
             self.logger.error(f"Error getting protocol analysis: {e}")
             return {"protocols": []}
 
-    def get_top_source_ips(self, limit: int = 10) -> List[dict]:
-        """Get top source IPs by packet count"""
+    def get_top_source_ips(self, limit: int = 10) -> List[TopSourceIP]:
+        """Get top source IPs by packet count with protocol distribution"""
         try:
             pipeline = [
+                # 第一阶段：按 source_ip 分组，统计总数据包数和总字节数，并收集所有协议
                 {
                     "$group": {
                         "_id": "$source_ip",
-                        "count": {"$sum": 1},
-                        "total_bytes": {"$sum": "$length"},
+                        "count": {"$sum": 1},  # 统计每个 source_ip 的数据包数
+                        "total_bytes": {
+                            "$sum": "$length"
+                        },  # 统计每个 source_ip 的总字节数
+                        "protocols": {"$push": "$protocol"},  # 收集所有协议
                     }
                 },
+                # 第二阶段：展开 protocols 数组，按 source_ip 和 protocol 分组统计
+                {"$unwind": "$protocols"},
+                {
+                    "$group": {
+                        "_id": {
+                            "source_ip": "$_id",  # 保留 source_ip
+                            "protocol": "$protocols",  # 按协议分组
+                        },
+                        "count": {"$sum": 1},  # 统计每个协议的出现次数
+                        "total_bytes": {"$first": "$total_bytes"},  # 保留总字节数
+                    }
+                },
+                # 第三阶段：重新按 source_ip 分组，整理 protocols 字段
+                {
+                    "$group": {
+                        "_id": "$_id.source_ip",
+                        "count": {"$first": "$count"},  # 保留总数据包数
+                        "total_bytes": {"$first": "$total_bytes"},  # 保留总字节数
+                        "protocols": {
+                            "$push": {
+                                "protocol": "$_id.protocol",
+                                "count": "$count",  # 每个协议的出现次数
+                            }
+                        },
+                    }
+                },
+                # 第四阶段：按 count 降序排列
                 {"$sort": {"count": -1}},
+                # 第五阶段：限制结果数量
                 {"$limit": limit},
             ]
             results = list(self.packets_collection.aggregate(pipeline))
             return [
-                {
-                    "ip": r["_id"],
-                    "packet_count": r["count"],
-                    "total_bytes": r["total_bytes"],
-                    "protocols": {},
-                }
+                TopSourceIP(
+                    ip=r["_id"],
+                    packet_count=r["count"],
+                    total_bytes=r["total_bytes"],
+                    protocols=r["protocols"],
+                )
                 for r in results
             ]
         except Exception as e:
@@ -264,87 +298,98 @@ class DatabaseOperations:
         """Get protocol distribution for a given time range"""
         try:
             pipeline = [
-                # 第一阶段：过滤时间范围
+                # 第一阶段：过滤时间段内的数据
                 {"$match": {"timestamp": {"$gte": start_time, "$lte": end_time}}},
-                # 第二阶段：按时间区间分组，并展开 protocols 信息
+                # 第二阶段：按协议分组，统计每个协议的数据包数和字节数
                 {
                     "$group": {
-                        "_id": {
-                            "$subtract": [
-                                "$timestamp",
-                                {"$mod": ["$timestamp", interval]},
-                            ]
-                        },
+                        "_id": "$protocol",  # 按协议分组
+                        "count": {"$sum": 1},  # 统计每个协议的数据包数
+                        "total_bytes": {"$sum": "$length"},  # 统计每个协议的总字节数
+                    }
+                },
+                # 第三阶段：计算总数据包数和总字节数
+                {
+                    "$group": {
+                        "_id": None,  # 合并所有分组
                         "protocols": {
                             "$push": {
-                                "protocol": "$protocol",
-                                "count": 1,
-                                "total_bytes": "$length",
+                                "protocol": "$_id",  # 协议名称
+                                "count": "$count",  # 每个协议的数据包数
+                                "total_bytes": "$total_bytes",  # 每个协议的总字节数
                             }
                         },
+                        "total_count": {"$sum": "$count"},  # 总数据包数
+                        "total_bytes": {"$sum": "$total_bytes"},  # 总字节数
                     }
                 },
-                # 第三阶段：展开 protocols 数组
-                {"$unwind": "$protocols"},
-                # 第四阶段：按时间区间和协议分组，统计每个协议的 count 和 total_bytes
+                # 第四阶段：计算每个协议的占比
                 {
-                    "$group": {
-                        "_id": {
-                            "time_interval": "$_id",
-                            "protocol": "$protocols.protocol",
-                        },
-                        "count": {"$sum": "$protocols.count"},  # 统计协议出现的次数
-                        "total_bytes": {
-                            "$sum": "$protocols.total_bytes"
-                        },  # 统计协议的总字节数
-                    }
-                },
-                # 第五阶段：重新按时间区间分组，整理 protocols 字段
-                {
-                    "$group": {
-                        "_id": "$_id.time_interval",
+                    "$project": {
+                        "_id": 0,  # 移除 _id 字段
                         "protocols": {
-                            "$push": {
-                                "protocol": "$_id.protocol",
-                                "count": "$count",
-                                "total_bytes": "$total_bytes",
+                            "$map": {
+                                "input": "$protocols",
+                                "as": "p",
+                                "in": {
+                                    "protocol": "$$p.protocol",
+                                    "count": "$$p.count",
+                                    "total_bytes": "$$p.total_bytes",
+                                    "percentage": {
+                                        "$multiply": [
+                                            {
+                                                "$divide": ["$$p.count", "$total_count"]
+                                            },  # 计算占比
+                                            100,  # 转换为百分比
+                                        ]
+                                    },
+                                },
                             }
                         },
-                        # 计算总的 count 和 total_bytes
-                        "total_count": {"$sum": "$count"},
-                        "total_bytes": {"$sum": "$total_bytes"},
+                        "total_count": 1,  # 保留总数据包数
+                        "total_bytes": 1,  # 保留总字节数
                     }
                 },
-                # 第六阶段：按时间区间排序
-                {"$sort": {"_id": 1}},
+                # 第五阶段：对 protocols 数组按 percentage 降序排列
+                {
+                    "$project": {
+                        "protocols": {
+                            "$sortArray": {
+                                "input": "$protocols",
+                                "sortBy": {"percentage": -1},  # 按 percentage 降序排列
+                            }
+                        },
+                        "total_count": 1,
+                        "total_bytes": 1,
+                    }
+                },
             ]
             results = list(self.packets_collection.aggregate(pipeline))
-            print(results)
             results = results[0]
 
-            total_packets = results.total_count
-            total_bytes = results.total_bytes
+            total_packets = results["total_count"]
+            total_bytes = results["total_bytes"]
             protocol_dist_list: List[ProtocolDistribution] = [
                 ProtocolDistribution(
-                    protocol=item.protocol,
-                    percentage=int(
+                    protocol=item["protocol"],
+                    percentage=(
                         round(
-                            (item.count / total_packets * 100)
+                            (item["count"] / total_packets * 100)
                             if total_packets > 0
                             else 0
                         )
                     ),
-                    packet_count=item.count,
-                    total_bytes=item.total_bytes,
+                    packet_count=item["count"],
+                    total_bytes=item["total_bytes"],
                 )
-                for item in results.protocols
+                for item in results["protocols"]
             ]
-            return results
+            return protocol_dist_list
         except Exception as e:
             self.logger.error(f"Error getting protocol distribution: {e}")
             return {"protocols": []}
 
-    def get_traffic_summary(self, start_time: float, end_time: float) -> dict:
+    def get_traffic_summary(self, start_time: float, end_time: float) -> TrafficSummary:
         """Get traffic summary for a given time range"""
         try:
             # Get basic stats
@@ -362,51 +407,24 @@ class DatabaseOperations:
             ]
             result = list(self.packets_collection.aggregate(pipeline))
             if not result:
-                return {
-                    "timestamp": start_time,
-                    "packet_count": 0,
-                    "total_bytes": 0,
-                    "top_source_ips": [],
-                    "protocol_distribution": [],
-                    "intervals": [],
-                }
+                return TrafficSummary()
 
             base_stats = result[0]
 
             # Get top source IPs
             top_ips = self.get_top_source_ips()
-            formatted_top_ips = [
-                {
-                    "ip": ip["ip"],
-                    "packet_count": ip["packet_count"],
-                    "total_bytes": ip["total_bytes"],
-                    "protocols": ip["protocols"],
-                }
-                for ip in top_ips
-            ]
 
             # Get protocol distribution
             protocol_dist = self.get_protocol_distribution(start_time, end_time)
-            total_packets = base_stats["total_packets"]
-            formatted_protocol_dist = [
-                {
-                    "protocol": p.protocol,
-                    "percentage": p.percentage,
-                    "packet_count": p.packet_count,
-                    "total_bytes": p.total_bytes,
-                }
-                for p in protocol_dist.protocols
-            ]
-
-            from models.Dtos import TrafficSummary
 
             return TrafficSummary(
-                timestamp=start_time,
-                packet_count=base_stats.get("total_packets", 0),
                 total_bytes=base_stats.get("total_bytes", 0),
-                top_source_ips=formatted_top_ips,
-                protocol_distribution=formatted_protocol_dist,
-                intervals=[],
+                top_source_ips=top_ips,
+                protocol_distribution=protocol_dist,
+                time_range=TimeRange(
+                    start=start_time,
+                    end=end_time,
+                ),
             )
         except Exception as e:
             self.logger.error(f"Error getting traffic summary: {e}")
@@ -473,25 +491,24 @@ class DatabaseOperations:
                 {"$sort": {"_id": 1}},
             ]
             results = list(self.packets_collection.aggregate(pipeline))
-            print(results)
             results = results[0]
 
-            total_packets = results.total_count
-            total_bytes = results.total_bytes
+            total_packets = results["total_count"]
+            total_bytes = results["total_bytes"]
             protocol_dist_list: List[ProtocolDistribution] = [
                 ProtocolDistribution(
-                    protocol=item.protocol,
-                    percentage=int(
+                    protocol=item["protocol"],
+                    percentage=(
                         round(
-                            (item.count / total_packets * 100)
+                            (item["count"] / total_packets * 100)
                             if total_packets > 0
                             else 0
                         )
                     ),
-                    packet_count=item.count,
-                    total_bytes=item.total_bytes,
+                    packet_count=item["count"],
+                    total_bytes=item["total_bytes"],
                 )
-                for item in results.protocols
+                for item in results["protocols"]
             ]
 
             return TimeSeriesData(

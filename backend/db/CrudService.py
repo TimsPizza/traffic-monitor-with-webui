@@ -80,27 +80,23 @@ class CrudService:
 
     def get_protocol_analysis(
         self, start_time: float, end_time: float
-    ) -> ProtocolAnalysis:
+    ) -> List[ProtocolAnalysis]:
         """Get protocol analysis for a given time range"""
-        raw_data = self.db_ops.get_protocol_analysis(start_time, end_time)
-        return self._create_dto_from_dict(raw_data, ProtocolAnalysis)
+        return self.db_ops.get_protocol_analysis(start_time, end_time)
 
     def get_top_source_ips(self, limit: int = 10) -> List[TopSourceIP]:
         """Get top source IPs by packet count"""
-        raw_data = self.db_ops.get_top_source_ips(limit)
-        return [self._create_dto_from_dict(doc, TopSourceIP) for doc in raw_data]
+        return self.db_ops.get_top_source_ips(limit)
 
     def get_protocol_distribution(
         self, start_time: float, end_time: float
-    ) -> ProtocolDistribution:
+    ) -> List[ProtocolDistribution]:
         """Get protocol distribution for a given time range"""
-        raw_data = self.db_ops.get_protocol_distribution(start_time, end_time)
-        return self._create_dto_from_dict(raw_data, ProtocolDistribution)
+        return self.db_ops.get_protocol_distribution(start_time, end_time)
 
     def get_traffic_summary(self, start_time: float, end_time: float) -> TrafficSummary:
         """Get traffic summary for a given time range"""
-        raw_data = self.db_ops.get_traffic_summary(start_time, end_time)
-        return self._create_dto_from_dict(raw_data, TrafficSummary)
+        return self.db_ops.get_traffic_summary(start_time, end_time)
 
     def get_time_series_data(
         self, start_time: float, end_time: float, interval: int

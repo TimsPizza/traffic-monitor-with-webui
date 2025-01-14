@@ -1,5 +1,5 @@
 from pydantic import BaseModel, field_validator, model_validator
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, List, Dict, Tuple, Union
 
 
 class FullPacket(BaseModel):
@@ -63,7 +63,6 @@ class ProtocolAnalysis(BaseModel):
     source_ips: List[str]
     ports: List[int]
     avg_packet_size: float
-    time_range: TimeRange  # [start, end]
 
 
 class TopSourceIP(BaseModel):
@@ -72,17 +71,17 @@ class TopSourceIP(BaseModel):
     ip: str
     packet_count: int
     total_bytes: int
-    protocols: Dict[str, int]  # protocol: count
+    protocols: List[Dict[str, Union[str, int]]]  # protocol: count
 
 
 class TrafficSummary(BaseModel):
     """Comprehensive traffic summary DTO"""
 
-    total_packets: int
-    total_bytes: int
-    top_source_ips: List[TopSourceIP]
-    protocol_distribution: List[ProtocolDistribution]
-    time_range: TimeRange
+    total_packets: int = -1
+    total_bytes: int = -1
+    top_source_ips: List[TopSourceIP] = []
+    protocol_distribution: List[ProtocolDistribution] = []
+    time_range: TimeRange = None
 
 
 class TimeSeriesData(BaseModel):
