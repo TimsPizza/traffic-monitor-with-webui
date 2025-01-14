@@ -16,7 +16,6 @@ class PacketProducer:
         self._buffer = buffer
         if self._buffer is None:
             raise ValueError("Buffer cannot be None")
-        self._filter = filter
         self.captured_packets_count = 0
         self._capturer = PacketCapturer(interface=interface, filter=filter)
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -29,6 +28,10 @@ class PacketProducer:
             self.logger.info(f"Producer started at {time.time()}")
         except Exception as e:
             self.logger.error(f"Error in 'start': {e}")
+
+    @property
+    def filter(self):
+        return self._capturer._filter
 
     @property
     def is_running(self):

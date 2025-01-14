@@ -1,3 +1,6 @@
+import datetime
+from uuid import uuid4
+
 from .Packet import Layer, ProcessedPacket
 
 
@@ -5,7 +8,9 @@ def check_udp(scapy_packet, packet: ProcessedPacket) -> None:
     if scapy_packet.haslayer("UDP"):
         packet.src_port = scapy_packet["UDP"].sport
         packet.dst_port = scapy_packet["UDP"].dport
-        packet.protocol += "UDP"
+        packet.protocol = "UDP"
+        packet.source_ip = scapy_packet["IP"].src
+
         packet.layer = Layer.TRANSPORT
 
 
@@ -13,6 +18,7 @@ def check_tcp(scapy_packet, packet: ProcessedPacket) -> None:
     if scapy_packet.haslayer("TCP"):
         packet.src_port = scapy_packet["TCP"].sport
         packet.dst_port = scapy_packet["TCP"].dport
+        packet.source_ip = scapy_packet["IP"].src
         packet.protocol = Layer.TRANSPORT
 
 
@@ -151,11 +157,11 @@ def check_ssh_type(scapy_packet, packet: ProcessedPacket):
     msg_type = payload[5] if len(payload) > 5 else 0
 
     if msg_type in (20, 21):  # SSH_MSG_KEXINIT
-        packet.protocol += "SSH-Handshake"
+        packet.protocol = "SSH-HANDSHAKE"
     elif msg_type == 50:  # SSH_MSG_USERAUTH_REQUEST
-        packet.protocol += "SSH-Auth"
+        packet.protocol = "SSH-AUTH"
     elif msg_type >= 90:  # Channel related messages
-        packet.protocol += "SSH-Data"
+        packet.protocol = "SSH-DATA"
 
 
 def check_src_ip_region(scapy_packet, packet: ProcessedPacket):
@@ -163,9 +169,13 @@ def check_src_ip_region(scapy_packet, packet: ProcessedPacket):
 
     if not scapy_packet.haslayer("IP") or GeoIPSingleton.given_up:
         return
-    ip = scapy_packet["IP"]
-    src_ip = ip.src
+    if packet.source_ip != "":
+        src_ip = packet.source_ip
+    else:
+        src_ip = scapy_packet["IP"].src
+
     region = GeoIPSingleton.check_region(src_ip)
+    print(f"Region: {region}")
     packet.src_region = region if region else "Unknown"
 
 
@@ -177,3 +187,7 @@ def check_handshake(scapy_packet, packet: ProcessedPacket) -> None:
     # Check for SYN flag without ACK (initial handshake)
     if tcp.flags & 0x02 and not tcp.flags & 0x10:
         packet.is_handshake = True
+
+
+def add_uuid(scapy_packet, packet: ProcessedPacket) -> None:
+    packet.id = uuid4()

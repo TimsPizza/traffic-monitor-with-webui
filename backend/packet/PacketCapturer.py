@@ -9,13 +9,17 @@ from core.config import ENV_CONFIG
 
 
 class PacketCapturer:
-    def __init__(self, interface: str, filter: Optional[str] = None):
+    def __init__(
+        self, interface: str, filter: Optional[str] = None, inbound_only: bool = True
+    ):
         self.interface = interface
         if self.interface not in netifaces.interfaces():
             raise ValueError(f"Interface {self.interface} does not exist")
 
         self._pcap = None
         self._filter: str = None
+        self._inbound_only = inbound_only
+        self._inbound_filter = "inbound" if inbound_only else ""
         self._batch_size = 128  # Process packets in small batches
         self._interface = interface
         self._stop_event = Event()
@@ -33,13 +37,23 @@ class PacketCapturer:
         self.logger.info(f"Filter cached: {filter}")
 
     def set_filter(self, filter: str) -> None:
-        """Set packet filter"""
+        """Set packet filter while preserving inbound filter"""
         if self._stop_event.is_set():
             self._cache_filter(filter)
             self.logger.info(f"Filter cached: {filter}")
             return
-        self._pcap.setfilter(filter)
-        self.logger.info(f"Filter set to: {filter}")
+
+        # Combine user filter with inbound filter
+        final_filter = filter
+        if self._inbound_filter:
+            final_filter = (
+                f"{filter} and {self._inbound_filter}"
+                if filter
+                else self._inbound_filter
+            )
+
+        self._pcap.setfilter(final_filter)
+        self.logger.info(f"Filter set to: {final_filter}")
 
     def register_callback(self, callback: Callable[[bytes, float], None]) -> None:
         """Register callback for packet processing"""
@@ -51,6 +65,13 @@ class PacketCapturer:
         self._stop_event.clear()
         self._pcap = pcap.pcap(name=self._interface, promisc=True, immediate=True)
         self._pcap.setnonblock(True)
+
+        # Apply inbound filter first
+        if self._inbound_filter:
+            self._pcap.setfilter(self._inbound_filter)
+            self.logger.info(f"Applied inbound filter: {self._inbound_filter}")
+
+        # Then apply user filter if exists
         if self._filter:
             self.set_filter(self._filter)
             self.logger.info(f"Using cached filter: {self._filter}")

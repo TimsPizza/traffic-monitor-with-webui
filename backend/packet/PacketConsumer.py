@@ -127,7 +127,6 @@ class PacketConsumer:
 
             if task_future:
                 task_future.result()
-            # self._update_processing_metrics(time.time() - start_time, len(batch))
         except Exception as e:
             self.logger.error(f"Error batch processing packet: {e}")
 

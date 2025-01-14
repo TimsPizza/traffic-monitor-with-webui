@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 from jose import jwt
 from passlib.context import CryptContext
 from core.config import ENV_CONFIG
-from db.UserCollection import UserCollection
+from db.UserService import UserService
 from models.User import User
 
 
@@ -28,13 +28,17 @@ class GeoIPSingleton:
     @classmethod
     def check_region(cls, ip_addr: str) -> Union[str, None]:
         instance = cls.get_instance()
-        if instance is None:
+        if not instance:
             return None
         try:
             response = instance.country(ip_addr)
+            cls._logger.debug(
+                f"GeoIP lookup for {ip_addr} returned {response.country.iso_code}"
+            )
             return response.country.iso_code
         except geoip2.errors.AddressNotFoundError:
-            return None
+            cls._logger.debug(f"GeoIP lookup for {ip_addr} returned Unknown")
+            return "Unknown"
 
     @classmethod
     def get_instance(cls) -> Union[geoip2.database.Reader, None]:
@@ -48,7 +52,7 @@ class GeoIPSingleton:
         return cls._instance
 
     @classmethod
-    def _download_mmdb(cls) -> bool:
+    async def _download_mmdb(cls) -> bool:
         if cls._download_retries >= cls._max_retries:
             cls.given_up = True
             return False
@@ -98,9 +102,11 @@ class GeoIPSingleton:
     def _load_instance(cls) -> bool:
         try:
             cls._instance = geoip2.database.Reader(cls._db_path)
+            cls._logger.info(f"GeoIP DB loaded from {cls._db_path}")
             return True
         except (FileNotFoundError, PermissionError) as e:
             cls._logger.error(f"Error accessing GeoIP DB: {e}")
+            return False
         except Exception as e:
             cls._logger.error(f"Unexpected error loading GeoIP DB: {e}")
         return False
@@ -128,7 +134,7 @@ class AuthService:
 
     @staticmethod
     async def authenticate_user(username: str, password: str) -> User | None:
-        user = await UserCollection.get_user(username)
+        user = await UserService.get_user(username)
         if not user:
             return None
         if not AuthService.verify_password(password, user.password_hash):
@@ -139,4 +145,4 @@ class AuthService:
     async def register_user(username: str, password: str) -> User:
         hashed_password = AuthService.get_password_hash(password)
         user = User(username=username, password_hash=hashed_password)
-        return await UserCollection.create_user(user)
+        return await UserService.create_user(user)

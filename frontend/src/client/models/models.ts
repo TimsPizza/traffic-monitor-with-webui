@@ -7,14 +7,16 @@ export interface ICaptureFilter {
 }
 
 export interface IAccessRecord {
-  id: number;
+  // id: number;
   src_ip: string;
-  dst_ip: string;
   src_port: number;
   src_region: string;
   dst_port: number;
   protocol: string;
-  timestamp: string;
+  timestamp: number;
+  is_handshake: boolean;
+  length: number;
+  layer: string;
 }
 
 export type TLoginForm = {

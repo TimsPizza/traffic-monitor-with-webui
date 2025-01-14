@@ -8,20 +8,16 @@ import {
   TUser,
 } from "../models/models";
 import { TQueryParams, TQueryType } from "../types";
-
-const API_BASE = ENV_CONFIG.API_BASE_URL;
+import { AXIOS_INSTANCE } from "../api/requests";
 
 export class AuthService {
   public static signUp = async (
     formData: TSignUpForm,
   ): Promise<TSignUpResponse> => {
-    const response = await axios.post(
-      `${API_BASE}/auth/register`,
-      {
-        username: formData.username,
-        password: formData.password,
-      },
-    );
+    const response = await AXIOS_INSTANCE.post(`/auth/register`, {
+      username: formData.username,
+      password: formData.password,
+    });
     return response.data;
   };
 
@@ -29,7 +25,7 @@ export class AuthService {
     formData: TLoginForm,
   ): Promise<TAuthResponse> => {
     const response = await axios.post<TAuthResponse>(
-      `${API_BASE}/auth/token`,
+      `/auth/token`,
       {
         username: formData.username,
         password: formData.password,
@@ -44,25 +40,23 @@ export class AuthService {
   };
 
   public static logout = async (): Promise<void> => {
-    await axios.post(`${API_BASE}/auth/logout`);
+    await axios.post(`/auth/logout`);
   };
 
   public static refreshToken = async (): Promise<TAuthResponse> => {
-    const response = await axios.post<TAuthResponse>(
-      `${API_BASE}/auth/refresh`,
-    );
+    const response = await axios.post<TAuthResponse>(`/auth/refresh`);
     return response.data;
   };
   public static readUser = async (): Promise<TUser> => {
-    const response = await axios.post<TUser>(`${API_BASE}/user`, {
-      Headers:{
+    const response = await axios.post<TUser>(`/user`, {
+      Headers: {
         Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-      }
+      },
     });
     return response.data;
   };
 }
- 
+
 export class QueryService {
   public static queryPackets = async (
     type: TQueryType,
@@ -94,12 +88,15 @@ export class QueryService {
         break;
     }
 
-    const response = await axios.get(`${url}?${queryParams.toString()}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
+    const response = await AXIOS_INSTANCE.get(
+      `${url}?${queryParams.toString()}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
-    });
+    );
 
     return response.data;
-  }
+  };
 }

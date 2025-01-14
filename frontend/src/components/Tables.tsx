@@ -43,6 +43,10 @@ const columns = [
 
 interface TableProps {
   data: IAccessRecord[];
+  hasPreviousPage: boolean;
+  hasNextPage:  boolean;
+  fetchNextPage: () => void;
+  fetchPreviousPage: () => void;
 }
 
 const Tables: React.FC<TableProps> = ({ data }) => {

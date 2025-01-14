@@ -24,7 +24,7 @@ const Layout = () => {
   }, [breakpoint]);
 
   return (
-    <div id="layout" className="relative flex flex-row">
+    <div id="layout" className="relative flex flex-row min-h-screen">
       <div
         id="overlay"
         className={`fixed inset-0 z-40 bg-black bg-opacity-50 transition-opacity duration-200 ${showOverlay ? "opacity-100" : "pointer-events-none opacity-0"}`}

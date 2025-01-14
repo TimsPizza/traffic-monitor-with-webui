@@ -2,6 +2,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from pymongo import MongoClient
+from backend.core import CustomHttpException
 from backend.db.Client import MongoConnectionSingleton
 from core.config import ENV_CONFIG
 
@@ -11,10 +12,9 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 async def get_session(token: str = Depends(oauth2_scheme)) -> MongoClient:
     """Get databse session by verifying JWT token"""
-    credentials_exception = HTTPException(
+    credentials_exception = CustomHttpException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
     )
 
     try:

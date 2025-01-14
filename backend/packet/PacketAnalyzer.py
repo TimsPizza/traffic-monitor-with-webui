@@ -1,7 +1,9 @@
 from threading import Event
 
+from core.services import GeoIPSingleton
 from core.config import ENV_CONFIG
 from .Processors import (
+    add_uuid,
     check_application_protocol,
     check_handshake,
     check_src_ip_region,
@@ -29,6 +31,9 @@ class PacketAnalyzer:
     ):
         self._stop_event = Event()
         self._stop_event.set()
+
+        GeoIPSingleton._load_instance()
+
         self._double_buffer_queue: DoubleBufferQueue = DoubleBufferQueue[
             CapturedPacket
         ](
@@ -47,12 +52,16 @@ class PacketAnalyzer:
             max_workers=consumer_max_workers,
             batch_size=consumer_batch_size,
         )
+        self._packet_producer.apply_filter(
+            "ip and not ether broadcast and not ether multicast"
+        )
         self._packet_consumer.add_processor(check_udp)
         self._packet_consumer.add_processor(check_tcp)
         self._packet_consumer.add_processor(check_src_ip_region)
         self._packet_consumer.add_processor(check_application_protocol)
         self._packet_consumer.add_processor(check_ssh_type)
         self._packet_consumer.add_processor(check_handshake)
+        self._packet_consumer.add_processor(add_uuid)
 
     def start(self):
         self._stop_event.clear()

@@ -38,7 +38,7 @@ async def stop_capture(analyzer: PacketAnalyzer = Depends(get_packet_analyzer)):
 
 @router.get("/config/filter", response_model=List[CaptureFilterRecord])
 async def get_all_filter(analyzer: PacketAnalyzer = Depends(get_packet_analyzer)):
-    filter = analyzer._packet_producer._filter
+    filter = analyzer._packet_producer.filter
     if not filter:
         return []
     resp = BPFUtils.parse_filter_expression(filter)

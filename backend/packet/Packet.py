@@ -17,6 +17,7 @@ class CapturedPacket:
 
 @dataclass
 class ProcessedPacket:
+    id: str = ""
     timestamp: float = -1
     layer: str = ""
     source_ip: str = ""

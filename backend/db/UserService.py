@@ -6,7 +6,7 @@ from typing import Optional
 
 
 # User database crud logic here
-class UserCollection:
+class UserService:
 
     _client = MongoConnectionSingleton.get_instance()
     _user_collection = _client.get_database(ENV_CONFIG.database_name).get_collection(
