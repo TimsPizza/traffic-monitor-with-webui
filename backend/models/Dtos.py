@@ -41,7 +41,8 @@ class ProtocolDistribution(BaseModel):
     """Protocol distribution analysis DTO"""
 
     protocol: str
-    percentage: float  # 0.0 - 100.0
+    percentage_count: float  # 0.0 - 100.0
+    percentage_bytes: float  # 0.0 - 100.0
     packet_count: int
     total_bytes: int
 
@@ -61,7 +62,6 @@ class ProtocolAnalysis(BaseModel):
     protocol: str
     packet_count: int
     source_ips: List[str]
-    ports: List[int]
     avg_packet_size: float
 
 
@@ -87,7 +87,6 @@ class TrafficSummary(BaseModel):
 class TimeSeriesData(BaseModel):
     """Time series analysis DTO"""
 
-    packet_count: int
+    total_packets: int
     total_bytes: int
-    protocol_distribution: List[ProtocolDistribution]  # protocol distributions
     time_range: TimeRange

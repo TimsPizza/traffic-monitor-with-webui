@@ -1,8 +1,10 @@
+from collections import Counter
 from typing import List, Type
 from models.Dtos import (
     FullPacket,
     NetworkStats,
     ProtocolAnalysis,
+    TimeRange,
     TopSourceIP,
     ProtocolDistribution,
     TrafficSummary,
@@ -14,32 +16,6 @@ from .DatabaseOperations import DatabaseOperations
 class CrudService:
     def __init__(self):
         self.db_ops = DatabaseOperations()
-
-    @staticmethod
-    def _create_dto_from_dict(doc: dict, dto_type: Type) -> object:
-        """Factory method to convert MongoDB document to specified DTO type"""
-        if dto_type == FullPacket:
-            return FullPacket(
-                id=str(doc.get("_id", "")),
-                src_ip=doc.get("source_ip", ""),
-                src_port=doc.get("src_port", -1),
-                dst_port=doc.get("dst_port", -1),
-                protocol=doc.get("protocol", ""),
-                timestamp=doc.get("timestamp", -1),
-            )
-        elif dto_type == NetworkStats:
-            return NetworkStats(**doc)
-        elif dto_type == ProtocolAnalysis:
-            return ProtocolAnalysis(**doc)
-        elif dto_type == TopSourceIP:
-            return TopSourceIP(**doc)
-        elif dto_type == ProtocolDistribution:
-            return ProtocolDistribution(**doc)
-        elif dto_type == TrafficSummary:
-            return TrafficSummary(**doc)
-        elif dto_type == TimeSeriesData:
-            return TimeSeriesData(**doc)
-        raise ValueError(f"Unsupported DTO type: {dto_type}")
 
     def find_packets_by_ip(
         self,
@@ -72,27 +48,101 @@ class CrudService:
         raw_data = self.db_ops.find_packets_by_timerange(
             start_time, end_time, page, page_size
         )
-        return [self._create_dto_from_dict(doc, FullPacket) for doc in raw_data]
 
     def get_network_stats(self, start_time: float, end_time: float) -> NetworkStats:
         """Get network statistics for a given time range"""
-        return self.db_ops.get_network_stats(start_time, end_time)
+        raw_data = self.db_ops.get_network_stats(start_time, end_time)
+        total_packets = sum(doc["total_packets"] for doc in raw_data)
+        total_bytes = sum(doc["total_bytes"] for doc in raw_data)
+        avg_packet_size = total_bytes / total_packets if total_packets > 0 else 0
+        protocol_distribution = [
+            ProtocolDistribution(
+                protocol=doc["protocol"],
+                percentage_count=doc["total_packets"] / total_packets * 100,
+                percentage_bytes=doc["total_bytes"] / total_bytes * 100,
+                packet_count=doc["total_packets"],
+                total_bytes=doc["total_bytes"],
+            )
+            for doc in raw_data
+        ]
+        return NetworkStats(
+            total_packets=total_packets,
+            total_bytes=total_bytes,
+            avg_packet_size=avg_packet_size,
+            protocol_distribution=protocol_distribution,
+        )
 
     def get_protocol_analysis(
         self, start_time: float, end_time: float
     ) -> List[ProtocolAnalysis]:
         """Get protocol analysis for a given time range"""
-        return self.db_ops.get_protocol_analysis(start_time, end_time)
+        raw_data = self.db_ops.get_protocol_analysis(start_time, end_time)
+        return [
+            ProtocolAnalysis(
+                protocol=doc["protocol"],
+                packet_count=doc["total_packets"],
+                source_ips=doc["source_ips"],
+                avg_packet_size=(
+                    doc["total_bytes"] / doc["total_packets"]
+                    if doc["total_packets"] > 0
+                    else 0
+                ),
+            )
+            for doc in raw_data
+        ]
 
-    def get_top_source_ips(self, limit: int = 10) -> List[TopSourceIP]:
+    def get_top_source_ips(
+        self, start_time: float, end_time: float, page: int, page_size: int
+    ) -> List[TopSourceIP]:
         """Get top source IPs by packet count"""
-        return self.db_ops.get_top_source_ips(limit)
+        raw_data = self.db_ops.get_top_source_ips(start_time, end_time, page, page_size)
+        ips = [doc["source_ip"] for doc in raw_data]
+        ip_records = [
+            {
+                "ip": ip,
+                "records": self.db_ops.find_packets_by_ip(
+                    ip, start_time, end_time, page, page_size=999999
+                ),
+            }
+            for ip in ips
+        ]
+
+        ip_protocol_counts_map = [
+            {
+                "ip": r["ip"],
+                "protocols": [(dict(Counter(doc["protocol"] for doc in r["records"])))],
+            }
+            for r in ip_records
+        ]
+        return [
+            TopSourceIP(
+                ip=doc["source_ip"],
+                packet_count=doc["total_packets"],
+                total_bytes=doc["total_bytes"],
+                protocols=ip_protocol_counts_map[ips.index(doc["source_ip"])][
+                    "protocols"
+                ],
+            )
+            for doc in raw_data
+        ].sort(key=lambda x: x.packet_count, reverse=True)
 
     def get_protocol_distribution(
         self, start_time: float, end_time: float
     ) -> List[ProtocolDistribution]:
         """Get protocol distribution for a given time range"""
-        return self.db_ops.get_protocol_distribution(start_time, end_time)
+        raw_data = self.db_ops.get_protocol_distribution(start_time, end_time)
+        total_packets = sum(doc["total_packets"] for doc in raw_data)
+        total_bytes = sum(doc["total_bytes"] for doc in raw_data)
+        return [
+            ProtocolDistribution(
+                protocol=doc["protocol"],
+                percentage_count=doc["total_packets"] / total_packets * 100,
+                percentage_bytes=doc["total_bytes"] / total_bytes * 100,
+                packet_count=doc["total_packets"],
+                total_bytes=doc["total_bytes"],
+            )
+            for doc in raw_data
+        ]
 
     def get_traffic_summary(self, start_time: float, end_time: float) -> TrafficSummary:
         """Get traffic summary for a given time range"""
@@ -102,7 +152,17 @@ class CrudService:
         self, start_time: float, end_time: float, interval: int
     ) -> TimeSeriesData:
         """Get time series data for a given time range and interval"""
-        return self.db_ops.get_time_series_data(start_time, end_time, interval)
+        raw_data = self.db_ops.get_time_series_data(start_time, end_time, interval)
+        return [
+            TimeSeriesData(
+                time_range=TimeRange(
+                    start=doc["timestamp"], end=doc["timestamp"] + interval
+                ),
+                total_packets=doc["total_packets"],
+                total_bytes=doc["total_bytes"],
+            )
+            for doc in raw_data
+        ]
 
     def delete_packets_before(self, timestamp: float) -> int:
         """Delete all packets before a specific timestamp"""

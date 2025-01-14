@@ -118,7 +118,10 @@ async def get_protocol_analysis(
 
 @router.get("/top-source-ips", response_model=List[TopSourceIP])
 async def get_top_source_ips(
-    limit: int = Query(10, ge=1, le=100, description="返回数量"),
+    start_time: float,
+    end_time: float,
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(50, ge=1, le=100, description="每页数量"),
     token: str = Depends(oauth2_scheme),
 ):
     """
@@ -129,7 +132,7 @@ async def get_top_source_ips(
     Returns:
         流量最大的源IP地址列表
     """
-    return crud_service.get_top_source_ips(limit)
+    return crud_service.get_top_source_ips(start_time, end_time, page, page_size)
 
 
 @router.get("/protocol-distribution", response_model=List[ProtocolDistribution])
@@ -168,7 +171,7 @@ async def get_traffic_summary(
     return crud_service.get_traffic_summary(start_time, end_time)
 
 
-@router.get("/time-series", response_model=TimeSeriesData)
+@router.get("/time-series", response_model=List[TimeSeriesData])
 async def get_time_series_data(
     start_time: float,
     end_time: float,
