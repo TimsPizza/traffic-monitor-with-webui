@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import tarfile
 import tempfile
 import requests
@@ -28,8 +29,10 @@ class GeoIPSingleton:
     @classmethod
     def check_region(cls, ip_addr: str) -> Union[str, None]:
         instance = cls.get_instance()
-        if not instance:
+        if cls.given_up:
             return None
+        if not instance:
+            return cls._load_instance()
         try:
             response = instance.country(ip_addr)
             cls._logger.debug(
@@ -44,7 +47,6 @@ class GeoIPSingleton:
     def get_instance(cls) -> Union[geoip2.database.Reader, None]:
         if cls._instance is None:
             if cls.given_up:
-                cls._logger.error("Max retries reached, giving up on GeoIP DB.")
                 return None
             if not cls._load_instance():
                 cls._download_mmdb()  # Attempt download
@@ -52,17 +54,22 @@ class GeoIPSingleton:
         return cls._instance
 
     @classmethod
-    async def _download_mmdb(cls) -> bool:
-        if cls._download_retries >= cls._max_retries:
+    def _download_mmdb(cls) -> bool:
+        if cls._download_retries >= cls._max_retries or cls.given_up:
             cls.given_up = True
             return False
         cls._download_retries += 1
 
         try:
+            if (
+                cls._db_path
+                == "YOUR_ABSOLUTE_PATH_TO_GEOIP_DB_FILE_OR_TARGET_DOWNLOAD_PATH"
+            ):
+                cls.given_up = True
             os.makedirs(os.path.dirname(cls._db_path), mode=0o700, exist_ok=True)
             license_key = ENV_CONFIG.maxmind_license_key
             if not license_key:
-                raise ValueError("MAXMIND_LICENSE_KEY is required")
+                cls._logger.error("A valid MAXMIND_LICENSE_KEY is required in .env")
 
             url = "https://download.maxmind.com/app/geoip_download"
             params = {
@@ -100,6 +107,13 @@ class GeoIPSingleton:
 
     @classmethod
     def _load_instance(cls) -> bool:
+        if (
+            cls._db_path
+            == "YOUR_ABSOLUTE_PATH_TO_GEOIP_DB_FILE_OR_TARGET_DOWNLOAD_PATH"
+        ):
+            cls._logger.error("Please specify a valid path for the GeoIP DB in .env")
+            cls.given_up = True
+            return False
         try:
             cls._instance = geoip2.database.Reader(cls._db_path)
             cls._logger.info(f"GeoIP DB loaded from {cls._db_path}")

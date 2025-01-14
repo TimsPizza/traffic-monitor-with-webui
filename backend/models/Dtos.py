@@ -6,10 +6,10 @@ class FullPacket(BaseModel):
     id: str
     region: str = ""
     src_ip: str = ""
-    src_port: int = -1
     dst_port: int = -1
     protocol: str = ""
     timestamp: float = -1
+    length: int = -1
 
 
 class TimeRange(BaseModel):
@@ -37,7 +37,7 @@ class BasicPacket(BaseModel):
     timestamp: float
 
 
-class ProtocolDistribution(BaseModel):
+class ProtocolDistributionItem(BaseModel):
     """Protocol distribution analysis DTO"""
 
     protocol: str
@@ -47,13 +47,18 @@ class ProtocolDistribution(BaseModel):
     total_bytes: int
 
 
+class ProtocolDistribution(BaseModel):
+    distribution: List[ProtocolDistributionItem] = []
+    time_range: TimeRange = None
+
+
 class NetworkStats(BaseModel):
     """Network statistics DTO"""
 
     total_packets: int = -1
     total_bytes: int = -1
     avg_packet_size: float = -1
-    protocol_distribution: List[ProtocolDistribution] = []
+    protocol_distribution: ProtocolDistribution
 
 
 class ProtocolAnalysis(BaseModel):
@@ -69,9 +74,9 @@ class TopSourceIP(BaseModel):
     """Top source IP analysis DTO"""
 
     ip: str
-    packet_count: int
+    region: str
+    total_packets: int
     total_bytes: int
-    protocols: List[Dict[str, Union[str, int]]]  # protocol: count
 
 
 class TrafficSummary(BaseModel):
@@ -80,7 +85,7 @@ class TrafficSummary(BaseModel):
     total_packets: int = -1
     total_bytes: int = -1
     top_source_ips: List[TopSourceIP] = []
-    protocol_distribution: List[ProtocolDistribution] = []
+    protocol_distribution: ProtocolDistribution = None
     time_range: TimeRange = None
 
 

@@ -175,7 +175,6 @@ def check_src_ip_region(scapy_packet, packet: ProcessedPacket):
         src_ip = scapy_packet["IP"].src
 
     region = GeoIPSingleton.check_region(src_ip)
-    print(f"Region: {region}")
     packet.src_region = region if region else "Unknown"
 
 
@@ -190,4 +189,4 @@ def check_handshake(scapy_packet, packet: ProcessedPacket) -> None:
 
 
 def add_uuid(scapy_packet, packet: ProcessedPacket) -> None:
-    packet.id = uuid4()
+    packet.id = str(uuid4())

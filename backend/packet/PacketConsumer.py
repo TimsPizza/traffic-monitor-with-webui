@@ -7,6 +7,7 @@ from typing import Any, Callable, List
 import scapy
 from scapy.all import Ether, IP, TCP
 
+from db.DatabaseOperations import DatabaseOperations
 from core.config import ENV_CONFIG
 from db.Crud import MONGO_DB
 from packet.Packet import CapturedPacket, ProcessedPacket
@@ -28,6 +29,8 @@ class PacketConsumer:
         self._buffer: DoubleBufferQueue = buffer
         self.executor: ThreadPoolExecutor = None
         self._processor_queue: List[Callable[[Any, ProcessedPacket], None]] = []
+
+        self._db_ops = DatabaseOperations()
 
         self._min_batch_size = max(1, batch_size // 2)
         self._max_batch_size = batch_size * 4
@@ -155,7 +158,7 @@ class PacketConsumer:
                     self._metrics.handshake_count += 1
                 if processed_packet.source_ip != "":
                     self._metrics.ip_packet_size_sum += processed_packet.length
-            is_insert_success = MONGO_DB.insert_packet(processed_packet)
+            is_insert_success = self._db_ops.insert_packet(processed_packet)
             self.logger.debug(
                 f"Processed packet: {processed_packet}, inserted: {is_insert_success}"
             )

@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from pydantic import BaseModel
+
 
 class Layer:
     PHYSICAL = "Physical"
@@ -15,8 +17,7 @@ class CapturedPacket:
     timestamp: float
 
 
-@dataclass
-class ProcessedPacket:
+class ProcessedPacket(BaseModel):
     id: str = ""
     timestamp: float = -1
     layer: str = ""

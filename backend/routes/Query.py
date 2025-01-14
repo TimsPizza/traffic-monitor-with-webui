@@ -63,6 +63,8 @@ async def query_by_protocol(
 @router.get("/source-ip", response_model=List[FullPacket])
 async def query_by_source_ip(
     ip_address: str,
+    start_time: float,
+    end_time: float,
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(50, ge=1, le=100, description="每页数量"),
     token: str = Depends(oauth2_scheme),
@@ -77,25 +79,9 @@ async def query_by_source_ip(
     Returns:
         匹配源IP地址的数据包列表
     """
-    return crud_service.find_packets_by_ip(ip_address, page, page_size)
-
-
-@router.get("/network-stats", response_model=NetworkStats)
-async def get_network_stats(
-    start_time: float,
-    end_time: float,
-    token: str = Depends(oauth2_scheme),
-):
-    """
-    获取网络统计信息
-    Args:
-        start_time: 开始时间 (unix timestamp)
-        end_time: 结束时间 (unix timestamp)
-        token: 认证token
-    Returns:
-        网络统计信息
-    """
-    return crud_service.get_network_stats(start_time, end_time)
+    return crud_service.find_packets_by_ip(
+        ip_address, start_time, end_time, page, page_size
+    )
 
 
 @router.get("/protocol-analysis", response_model=List[ProtocolAnalysis])
@@ -135,10 +121,12 @@ async def get_top_source_ips(
     return crud_service.get_top_source_ips(start_time, end_time, page, page_size)
 
 
-@router.get("/protocol-distribution", response_model=List[ProtocolDistribution])
+@router.get("/protocol-distribution", response_model=ProtocolDistribution)
 async def get_protocol_distribution(
     start_time: float,
     end_time: float,
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(50, ge=1, le=100, description="每页数量"),
     token: str = Depends(oauth2_scheme),
 ):
     """
@@ -157,6 +145,8 @@ async def get_protocol_distribution(
 async def get_traffic_summary(
     start_time: float,
     end_time: float,
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(50, ge=1, le=100, description="每页数量"),
     token: str = Depends(oauth2_scheme),
 ):
     """
