@@ -11,7 +11,7 @@ from models.Dtos import (
     TrafficSummary,
     TimeSeriesData,
 )
-from .DatabaseOperations import DatabaseOperations
+from db.DatabaseOperations import DatabaseOperations
 
 
 class CrudService:

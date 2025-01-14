@@ -9,12 +9,12 @@ from scapy.all import Ether, IP, TCP
 
 from db.DatabaseOperations import DatabaseOperations
 from core.config import ENV_CONFIG
-from db.Crud import MONGO_DB
+
 from packet.Packet import CapturedPacket, ProcessedPacket
-from utils.DoubleBufferQueue import DoubleBufferQueue
+from packet.utils.DoubleBufferQueue import DoubleBufferQueue
 from concurrent.futures import Future, ThreadPoolExecutor
 
-from utils.Interfaces import ConsumerMetrics
+from packet.utils.Interfaces import ConsumerMetrics
 
 
 class PacketConsumer:
@@ -241,7 +241,7 @@ class PacketConsumer:
     def _log_metrics(self):
         """log current performance metrics"""
         with self._metrics_lock:
-            self.logger.info(
+            self.logger.debug(
                 f"Consumer Metrics - "
                 f"Avg Batch Size: {self._metrics.avg_batch_size:.2f}, "
                 f"Avg Wait Time: {self._metrics.avg_wait_time*1000:.2f}ms, "
@@ -253,7 +253,7 @@ class PacketConsumer:
     def _log_final_metrics(self):
         """log final metrics when consumer is stopped"""
         with self._metrics_lock:
-            self.logger.info(
+            self.logger.debug(
                 f"Final Consumer Metrics - "
                 f"Total Processed: {self._metrics.processed_packets}, "
                 f"Avg Batch Size: {self._metrics.avg_batch_size:.2f}, "

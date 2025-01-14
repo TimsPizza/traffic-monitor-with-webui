@@ -4,7 +4,7 @@ import logging
 import time
 from threading import RLock
 
-from utils.Interfaces import DoubleBufferQueueMetrics
+from .Interfaces import DoubleBufferQueueMetrics
 
 from .DynamicQueue import DynamicQueue
 from .Strategy import BufferStrategy, MixedSwapStrategy

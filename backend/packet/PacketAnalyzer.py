@@ -1,6 +1,6 @@
 from threading import Event
 
-from core.services import GeoIPSingleton
+from service.GeoIpService import GeoIPSingleton
 from core.config import ENV_CONFIG
 from .Processors import (
     add_uuid,
@@ -11,10 +11,10 @@ from .Processors import (
     check_tcp,
     check_udp,
 )
-from packet.PacketConsumer import PacketConsumer
-from packet.PacketProducer import PacketProducer
-from packet.Packet import CapturedPacket
-from utils.DoubleBufferQueue import DoubleBufferQueue
+from .PacketConsumer import PacketConsumer
+from .PacketProducer import PacketProducer
+from .Packet import CapturedPacket
+from packet.utils.DoubleBufferQueue import DoubleBufferQueue
 
 
 class PacketAnalyzer:

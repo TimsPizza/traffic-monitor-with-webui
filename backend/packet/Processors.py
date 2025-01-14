@@ -2,6 +2,7 @@ import datetime
 from uuid import uuid4
 
 from .Packet import Layer, ProcessedPacket
+from service.GeoIpService import GeoIPSingleton
 
 
 def check_udp(scapy_packet, packet: ProcessedPacket) -> None:
@@ -165,7 +166,6 @@ def check_ssh_type(scapy_packet, packet: ProcessedPacket):
 
 
 def check_src_ip_region(scapy_packet, packet: ProcessedPacket):
-    from core.services import GeoIPSingleton
 
     if not scapy_packet.haslayer("IP") or GeoIPSingleton.given_up:
         return

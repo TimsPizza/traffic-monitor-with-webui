@@ -3,25 +3,17 @@ import os
 import re
 import tarfile
 import tempfile
-import requests
 from typing import Union
-
-
-from .config import ENV_CONFIG
+import requests
 import geoip2.database
-
-from datetime import datetime, timedelta
-from jose import jwt
-from passlib.context import CryptContext
 from core.config import ENV_CONFIG
-from db.UserService import UserService
-from models.User import User
 
 
 class GeoIPSingleton:
     _instance = None
     _db_path = ENV_CONFIG.geoip_db_abs_path
     _logger = logging.getLogger("GeoIPUtils")
+    _logger.setLevel(ENV_CONFIG.log_level)
     _max_retries = 3
     _download_retries = 0
     given_up = False
@@ -124,39 +116,3 @@ class GeoIPSingleton:
         except Exception as e:
             cls._logger.error(f"Unexpected error loading GeoIP DB: {e}")
         return False
-
-
-class AuthService:
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-    @staticmethod
-    def verify_password(plain_password: str, hashed_password: str) -> bool:
-        return AuthService.pwd_context.verify(plain_password, hashed_password)
-
-    @staticmethod
-    def get_password_hash(password: str) -> str:
-        return AuthService.pwd_context.hash(password)
-
-    @staticmethod
-    def create_access_token(username: str) -> str:
-        expire = datetime.now() + timedelta(minutes=ENV_CONFIG.jwt_expire_minutes)
-        expire = expire.timestamp()
-        to_encode = {"sub": username, "exp": expire}
-        return jwt.encode(
-            to_encode, ENV_CONFIG.jwt_secret_key, algorithm=ENV_CONFIG.jwt_algorithm
-        )
-
-    @staticmethod
-    async def authenticate_user(username: str, password: str) -> User | None:
-        user = await UserService.get_user(username)
-        if not user:
-            return None
-        if not AuthService.verify_password(password, user.password_hash):
-            return None
-        return user
-
-    @staticmethod
-    async def register_user(username: str, password: str) -> User:
-        hashed_password = AuthService.get_password_hash(password)
-        user = User(username=username, password_hash=hashed_password)
-        return await UserService.create_user(user)

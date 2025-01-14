@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from core.services import AuthService
+from service.AuthService import AuthService
 from models.User import User, UserRegisterForm
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -26,4 +26,4 @@ async def register(formData: UserRegisterForm):
 
 @router.post("/read-user", response_model=User)
 async def get_user(access_token: str):
-    return await AuthService.get_user(access_token)
+    return await AuthService.get_current_user(access_token)

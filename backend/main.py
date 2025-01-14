@@ -6,7 +6,7 @@ from starlette.middleware.cors import CORSMiddleware
 import os
 import sys
 from core.config import ENV_CONFIG
-from routes import router
+from api import router
 
 
 @asynccontextmanager

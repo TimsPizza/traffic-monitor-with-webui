@@ -10,7 +10,7 @@ from models.Dtos import (
     TrafficSummary,
     TimeSeriesData,
 )
-from db.CrudService import CrudService
+from service.CrudService import CrudService
 
 router = APIRouter(prefix="/query", tags=["query"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")

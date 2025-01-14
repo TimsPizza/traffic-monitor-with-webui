@@ -7,7 +7,7 @@ from pymongo.database import Database
 from db.QueryExecutor import QueryExecutor
 from packet.Packet import ProcessedPacket
 from db.Client import MongoConnectionSingleton
-from core.services import ENV_CONFIG
+from service.AuthService import ENV_CONFIG
 from models.Dtos import (
     FullPacket,
     NetworkStats,

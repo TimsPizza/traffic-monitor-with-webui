@@ -3,7 +3,7 @@ import time
 from core.config import ENV_CONFIG
 from packet.Packet import CapturedPacket
 from packet.PacketCapturer import PacketCapturer
-from utils.DoubleBufferQueue import DoubleBufferQueue
+from packet.utils.DoubleBufferQueue import DoubleBufferQueue
 
 
 class PacketProducer:

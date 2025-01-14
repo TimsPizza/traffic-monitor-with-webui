@@ -5,10 +5,6 @@ from threading import Thread, Event
 import time
 import logging
 
-if TYPE_CHECKING:
-    from .DynamicQueue import DynamicQueue
-    from .DoubleBufferQueue import DoubleBufferQueue
-
 T = TypeVar("T")
 
 

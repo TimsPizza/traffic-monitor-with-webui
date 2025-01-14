@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 
 from models import CaptureFilterRecord
 from packet.PacketAnalyzer import PacketAnalyzer, AnalyzerSingleton
-from utils.BpfUtils import BPFUtils
+from packet.utils.BpfUtils import BPFUtils
 
 # TODO: add auth to this route
 router = APIRouter(prefix="/capture")

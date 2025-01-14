@@ -1,7 +1,7 @@
 from fastapi import APIRouter
-from .Capture import router as capture_router
-from .Auth import router as auth_router
-from .Query import router as query_router
+from .routes.Capture import router as capture_router
+from .routes.Auth import router as auth_router
+from .routes.Query import router as query_router
 
 router = APIRouter()
 router.include_router(capture_router)

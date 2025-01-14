@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import time
 
-from utils.Interfaces import BaseDynamicQueueResizeStrategy, BufferStrategy
+from .Interfaces import BaseDynamicQueueResizeStrategy, BufferStrategy
 
 
 class TimeBasedStrategy(BufferStrategy):
@@ -34,7 +34,8 @@ class SizeBasedStrategy(BufferStrategy):
 
     def on_swap(self):
         pass
-    
+
+
 class MixedSwapStrategy(BufferStrategy):
     """Based on both time interval and size of the queue"""
 
@@ -108,4 +109,3 @@ class DynamicQueueResizeStrategy(BaseDynamicQueueResizeStrategy):
             super().__str__()
             + f"expand_threshold_ratio: {self.expand_threshold_ratio}, shrink_timeout: {self.shrink_timeout}"
         )
-
