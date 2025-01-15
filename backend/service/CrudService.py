@@ -26,7 +26,7 @@ class CrudService:
         page: int = 1,
         page_size: int = 50,
     ) -> List[FullPacket]:
-        """Find all packets from a specific IP address with pagination"""
+        """Find packets by source IP with pagination"""
         raw_data = self.db_ops.find_packets_by_ip(
             ip_address, start_time, end_time, page, page_size
         )
@@ -38,11 +38,58 @@ class CrudService:
                 dst_port=doc["dst_port"],
                 protocol=doc["protocol"],
                 length=doc["length"],
-                region=(
-                    doc["region"]
-                    if "region" in doc and doc["region"] is not None
-                    else "Unknown"
-                ),
+                region=(doc["region"] if doc["region"] is not None else "Unknown"),
+            )
+            for doc in raw_data
+        ]
+
+    def find_packets_by_port(
+        self,
+        port: int,
+        start_time: float,
+        end_time: float,
+        page: int = 1,
+        page_size: int = 50,
+    ) -> List[FullPacket]:
+        """Find packets by destination port with pagination"""
+        raw_data = self.db_ops.find_packets_by_port(
+            port, start_time, end_time, page, page_size
+        )
+        print(raw_data)
+        return [
+            FullPacket(
+                id=str(doc["_id"]),
+                timestamp=doc["timestamp"],
+                src_ip=doc["source_ip"],
+                dst_port=doc["dst_port"],
+                protocol=doc["protocol"],
+                length=doc["length"],
+                region=(doc["region"] if doc["region"] is not None else "Unknown"),
+            )
+            for doc in raw_data
+        ]
+
+    def find_packets_by_region(
+        self,
+        region: str,
+        start_time: float,
+        end_time: float,
+        page: int = 1,
+        page_size: int = 50,
+    ) -> List[FullPacket]:
+        """Find packets by region with pagination"""
+        raw_data = self.db_ops.find_packets_by_region(
+            region, start_time, end_time, page, page_size
+        )
+        return [
+            FullPacket(
+                id=str(doc["_id"]),
+                timestamp=doc["timestamp"],
+                src_ip=doc["source_ip"],
+                dst_port=doc["dst_port"],
+                protocol=doc["protocol"],
+                length=doc["length"],
+                region=(doc["region"] if doc["region"] is not None else "Unknown"),
             )
             for doc in raw_data
         ]
@@ -63,11 +110,7 @@ class CrudService:
                 dst_port=doc["dst_port"],
                 protocol=doc["protocol"],
                 length=doc["length"],
-                region=(
-                    doc["region"]
-                    if "region" in doc and doc["region"] is not None
-                    else "Unknown"
-                ),
+                region=(doc["region"] if doc["region"] is not None else "Unknown"),
             )
             for doc in raw_data
         ]
@@ -90,11 +133,7 @@ class CrudService:
                 src_ip=doc["source_ip"],
                 dst_port=doc["dst_port"],
                 protocol=doc["protocol"],
-                region=(
-                    doc["region"]
-                    if "region" in doc and doc["region"] is not None
-                    else "Unknown"
-                ),
+                region=(doc["region"] if doc["region"] is not None else "Unknown"),
             )
             for doc in raw_data
         ]
@@ -128,11 +167,7 @@ class CrudService:
                 ip=doc["source_ip"],
                 total_packets=doc["total_packets"],
                 total_bytes=doc["total_bytes"],
-                region=(
-                    doc["region"]
-                    if "region " in doc and doc["region"] is not None
-                    else "Unknown"
-                ),
+                region=(doc["region"] if doc["region"] is not None else "Unknown"),
             )
             for doc in raw_data
         ]

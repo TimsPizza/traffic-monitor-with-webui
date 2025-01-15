@@ -84,6 +84,54 @@ class QueryExecutor:
             self.logger.error(f"Error finding packets by time range: {e}")
             return []
 
+    def find_packets_by_port(
+        self,
+        port: int,
+        start_time: float,
+        end_time: float,
+        page: int = 1,
+        page_size: int = 50,
+    ) -> List[Dict[str, Any]]:
+        """Find packets by destination port with pagination"""
+        try:
+            pipeline = (
+                self.pipeline_builder.reset()
+                .match_time_range(start_time, end_time)
+                .rename_field("src_region", "region")
+                .match_port(port)
+                .sort("timestamp", -1)
+                .paginate(page, page_size)
+                .build()
+            )
+            return self.execute_pipeline(pipeline)
+        except Exception as e:
+            self.logger.error(f"Error finding packets by port: {e}")
+            return []
+
+    def find_packets_by_region(
+        self,
+        region: str,
+        start_time: float,
+        end_time: float,
+        page: int = 1,
+        page_size: int = 50,
+    ) -> List[Dict[str, Any]]:
+        """Find packets by region with pagination"""
+        try:
+            pipeline = (
+                self.pipeline_builder.reset()
+                .match_time_range(start_time, end_time)
+                .rename_field("src_region", "region")
+                .match_region(region)
+                .sort("timestamp", -1)
+                .paginate(page, page_size)
+                .build()
+            )
+            return self.execute_pipeline(pipeline)
+        except Exception as e:
+            self.logger.error(f"Error finding packets by region: {e}")
+            return []
+
     def get_network_stats(
         self, start_time: float, end_time: float
     ) -> List[Dict[str, Any]]:

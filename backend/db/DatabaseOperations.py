@@ -67,6 +67,32 @@ class DatabaseOperations:
             self.logger.error(f"Error inserting multiple packets: {e}")
             return False
 
+    def find_packets_by_port(
+        self,
+        port: int,
+        start_time: float,
+        end_time: float,
+        page: int,
+        page_size: int,
+    ) -> List[Dict[str, Any]]:
+        """Find all packets with a specific destination port with pagination"""
+        return self.query_executor.find_packets_by_port(
+            port, start_time, end_time, page, page_size
+        )
+
+    def find_packets_by_region(
+        self,
+        region: str,
+        start_time: float,
+        end_time: float,
+        page: int,
+        page_size: int,
+    ) -> List[Dict[str, Any]]:
+        """Find all packets from a specific region with pagination"""
+        return self.query_executor.find_packets_by_region(
+            region, start_time, end_time, page, page_size
+        )
+
     def find_packets_by_ip(
         self,
         ip_address: str,

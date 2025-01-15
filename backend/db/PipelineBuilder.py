@@ -88,6 +88,23 @@ class PipelineBuilder:
         self.pipeline.append({"$match": {"source_ip": ip_address}})
         return self
 
+    def match_port(self, port: int) -> "PipelineBuilder":
+        """Add port filter to pipeline"""
+        self.pipeline.append({"$match": {"dst_port": port}})
+        return self
+
+    def match_region(self, region: str) -> "PipelineBuilder":
+        """Add region filter to pipeline"""
+
+        self.pipeline.append({"$match": {"region": region}})
+        return self
+
+    def rename_field(self, existing_field: str, new_field: str) -> "PipelineBuilder":
+        """Add field renaming to pipeline"""
+        self.pipeline.append({"$addFields": {new_field: f"${existing_field}"}})
+        self.pipeline.append({"$unset": existing_field})
+        return self
+
     def group_by_source_ip(self) -> "PipelineBuilder":
         """Add source IP grouping to pipeline"""
         self.pipeline.append(
@@ -96,7 +113,7 @@ class PipelineBuilder:
                     "_id": "$source_ip",
                     "count": {"$sum": 1},
                     "total_bytes": {"$sum": "$length"},
-                    "region": {"$first": "$src_region"},
+                    "region": {"$first": "$region"},
                 }
             }
         )
