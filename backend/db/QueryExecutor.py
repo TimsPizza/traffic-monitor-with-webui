@@ -174,6 +174,8 @@ class QueryExecutor:
                 self.pipeline_builder.reset()
                 .match_time_range(start_time, end_time)
                 .group_by_source_ip()
+                .rename_field("_id", "source_ip")
+                .rename_field("count", "total_packets")
                 .sort("total_packets", -1)
                 .paginate(page, page_size)
                 .build()

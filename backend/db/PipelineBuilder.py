@@ -113,19 +113,11 @@ class PipelineBuilder:
                     "_id": "$source_ip",
                     "count": {"$sum": 1},
                     "total_bytes": {"$sum": "$length"},
-                    "region": {"$first": "$region"},
+                    "region": {"$first": "$src_region"},
                 }
             }
         )
-        return self.project(
-            {
-                "source_ip": "$_id",
-                "total_packets": "$count",
-                "total_bytes": 1,
-                "region": 1,
-                "_id": 0,
-            }
-        )
+        return self
 
     # Time interval operations
     def group_by_time_interval(self, interval: int) -> "PipelineBuilder":
