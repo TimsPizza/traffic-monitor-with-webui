@@ -18,8 +18,8 @@ class DoubleBufferQueue(Generic[T]):
         max_size: int = 8192,
         min_size: int = 256,
         swap_strategy: Optional[BufferStrategy] = None,
-        growth_factor: float = 1.5,
-        shrink_factor: float = 0.5,
+        growth_factor: float = 2.0,
+        shrink_factor: float = 0.8,
     ):
         # Initialize queues using DynamicQueue in an immutable tuple
         self._queues: Tuple[DynamicQueue, DynamicQueue] = (
@@ -46,7 +46,7 @@ class DoubleBufferQueue(Generic[T]):
         # use mixed strategy by default, swap every 10 seconds(low pressure)
         # or when the queue is 80% full(high pressure, buffer already expanded to the max size)
         self._strategy = swap_strategy or MixedSwapStrategy(
-            swap_interval_sec=10, threshold_ratio=0.8
+            swap_interval_sec=10, threshold_ratio=0.75
         )
 
         # Threading controls

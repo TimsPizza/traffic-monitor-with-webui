@@ -79,7 +79,6 @@ class DynamicQueueResizeStrategy(BaseDynamicQueueResizeStrategy):
 
     def should_expand(self, current_size: int, max_size: int) -> bool:
         flag = current_size >= (max_size * self.expand_threshold_ratio)
-        # print(f"current_size: {current_size}, max_size: {max_size}, flag: {flag}")
         if flag:
             self.on_expand()
         return flag

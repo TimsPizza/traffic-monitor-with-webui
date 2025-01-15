@@ -27,12 +27,8 @@ class GeoIPSingleton:
             return cls._load_instance()
         try:
             response = instance.country(ip_addr)
-            cls._logger.debug(
-                f"GeoIP lookup for {ip_addr} returned {response.country.iso_code}"
-            )
             return response.country.iso_code
         except geoip2.errors.AddressNotFoundError:
-            cls._logger.debug(f"GeoIP lookup for {ip_addr} returned Unknown")
             return "Unknown"
 
     @classmethod

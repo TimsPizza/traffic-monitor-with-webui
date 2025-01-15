@@ -83,7 +83,6 @@ class CrudService:
         raw_data = self.db_ops.find_packets_by_timerange(
             start_time, end_time, page, page_size
         )
-        print(raw_data)
         return [
             FullPacket(
                 id=str(doc["_id"]),
@@ -124,7 +123,6 @@ class CrudService:
     ) -> List[TopSourceIP]:
         """Get top source IPs by packet count"""
         raw_data = self.db_ops.get_top_source_ips(start_time, end_time, page, page_size)
-        print(raw_data)
         return [
             TopSourceIP(
                 ip=doc["source_ip"],

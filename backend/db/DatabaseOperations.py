@@ -60,23 +60,12 @@ class DatabaseOperations:
     def insert_many_packets(self, packets: List[ProcessedPacket]) -> int:
         """Insert multiple processed packets into the database"""
         try:
-            packet_dicts = [
-                {
-                    "id": packet.id,
-                    "timestamp": packet.timestamp,
-                    "layer": packet.layer,
-                    "source_ip": packet.source_ip,
-                    "src_port": packet.src_port,
-                    "dst_port": packet.dst_port,
-                    "protocol": packet.protocol,
-                }
-                for packet in packets
-            ]
-            result = self.packets_collection.insert_many(packet_dicts)
+            packet_dict = [packet.model_dump() for packet in packets]
+            result = self.packets_collection.insert_many(packet_dict)
             return len(result.inserted_ids)
         except Exception as e:
             self.logger.error(f"Error inserting multiple packets: {e}")
-            return 0
+            return False
 
     def find_packets_by_ip(
         self,

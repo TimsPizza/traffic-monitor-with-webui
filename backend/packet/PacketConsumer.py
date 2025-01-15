@@ -33,9 +33,11 @@ class PacketConsumer:
         self._db_ops = DatabaseOperations()
 
         self._min_batch_size = max(1, batch_size // 2)
-        self._max_batch_size = batch_size * 4
+        self._max_batch_size = batch_size * 8
         self._current_batch_size = batch_size
-        self._max_wait_time = 5  # max wait time for collecting a batch from the buffer
+        self._max_wait_time = (
+            5  # max wait seconds for collecting a batch from the buffer
+        )
 
         self._stop_event = Event()
         self._stop_event.set()
@@ -136,12 +138,18 @@ class PacketConsumer:
     def _process_batch_executor(self, batch: List[CapturedPacket]):
         if not batch:
             return
+        buffer: List[ProcessedPacket] = []
         start_time = time.time()
         for packet in batch:
-            self._process_packet(packet)
+            self._process_packet(packet, buffer)
+        if buffer:
+            insert_result = self._db_ops.insert_many_packets(buffer)
+            self.logger.debug(
+                f"Inserted {insert_result} processed packets into the database, success: {insert_result == len(buffer)}"
+            )
         self._update_batch_processing_metrics(time.time() - start_time, len(batch))
 
-    def _process_packet(self, packet: CapturedPacket):
+    def _process_packet(self, packet: CapturedPacket, buffer: List[ProcessedPacket]):
         """handle single packet processing"""
         time_stamp, packet = packet.timestamp, packet.raw_packet
         try:
@@ -158,10 +166,10 @@ class PacketConsumer:
                     self._metrics.handshake_count += 1
                 if processed_packet.source_ip != "":
                     self._metrics.ip_packet_size_sum += processed_packet.length
-            is_insert_success = self._db_ops.insert_packet(processed_packet)
-            self.logger.debug(
-                f"Processed packet: {processed_packet}, inserted: {is_insert_success}"
-            )
+            buffer.append(processed_packet)
+            # self.logger.debug(
+            #     f"Processed packet: {processed_packet}, inserted: {is_insert_success}"
+            # )
         except Exception as e:
             self.logger.error(f"Error in packet processing: {e}")
 
@@ -186,7 +194,7 @@ class PacketConsumer:
         ):
             # high load, increase batch size
             self._current_batch_size = min(
-                self._current_batch_size * 1.5, self._max_batch_size
+                self._current_batch_size * 2, self._max_batch_size
             )
         elif (
             wait_time >= self._max_wait_time or actual_batch_size < self._min_batch_size
