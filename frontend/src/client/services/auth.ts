@@ -1,10 +1,6 @@
+import { TLoginForm, TSignUpForm, TUser } from "../api/models/request";
+import { TAuthResponse } from "../api/models/response";
 import { AuthApi } from "../api/requests";
-import {
-  TAuthResponse,
-  TLoginForm,
-  TSignUpForm,
-  TUser,
-} from "../models/models";
 
 export class AuthService {
   public static login(formData: TLoginForm): Promise<TAuthResponse> {
