@@ -7,6 +7,7 @@ import {
   getPaginationRowModel,
 } from "@tanstack/react-table";
 import type { IAccessRecord } from "../client/models/models";
+import { useEffect } from "react";
 
 const columnHelper = createColumnHelper<IAccessRecord>();
 
@@ -19,17 +20,21 @@ const columns = [
     header: "Source IP",
     cell: (info) => info.getValue(),
   }),
-  columnHelper.accessor("src_region", {
+  columnHelper.accessor("region", {
     header: "Region",
-    cell: (info) => info.getValue().toUpperCase(),
+    cell: (info) => {
+      if (info && info.getValue()) {
+        return info.getValue().toUpperCase();
+      }
+    },
   }),
   columnHelper.accessor("protocol", {
     header: "Protocol",
-    cell: (info) => info.getValue().toUpperCase(),
-  }),
-  columnHelper.accessor("src_port", {
-    header: "Source Port",
-    cell: (info) => info.getValue(),
+    cell: (info) => {
+      if (info && info.getValue()) {
+        return info.getValue().toUpperCase();
+      }
+    },
   }),
   columnHelper.accessor("dst_port", {
     header: "Destination Port",
@@ -44,12 +49,16 @@ const columns = [
 interface TableProps {
   data: IAccessRecord[];
   hasPreviousPage: boolean;
-  hasNextPage:  boolean;
+  hasNextPage: boolean;
   fetchNextPage: () => void;
   fetchPreviousPage: () => void;
 }
 
-const Tables: React.FC<TableProps> = ({ data }) => {
+const Tables: React.FC<TableProps> = ({ data, hasNextPage, hasPreviousPage, fetchNextPage, fetchPreviousPage }) => {
+  useEffect(() => {
+    console.log("table", data);
+  }, [data]);
+
   const table = useReactTable({
     data,
     columns,
@@ -83,7 +92,10 @@ const Tables: React.FC<TableProps> = ({ data }) => {
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white">
               {table.getRowModel().rows.map((row, index) => (
-                <tr key={row.id} className={`hover:bg-gray-50 ${index % 2 ? "bg-gray-100" : "bg-white"}`}>
+                <tr
+                  key={row.id}
+                  className={`hover:bg-gray-50 ${index % 2 ? "bg-gray-100" : "bg-white"}`}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <td
                       key={cell.id}

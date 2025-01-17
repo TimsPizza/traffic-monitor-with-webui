@@ -102,6 +102,7 @@ class CrudService:
     ) -> List[FullPacket]:
         """Find all packets with a specific protocol with pagination"""
         raw_data = self.db_ops.find_packets_by_protocol(protocol, page, page_size)
+        print(raw_data)
         return [
             FullPacket(
                 id=str(doc["_id"]),
@@ -126,6 +127,7 @@ class CrudService:
         raw_data = self.db_ops.find_packets_by_timerange(
             start_time, end_time, page, page_size
         )
+        print(raw_data)
         return [
             FullPacket(
                 id=str(doc["_id"]),

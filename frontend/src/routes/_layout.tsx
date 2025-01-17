@@ -9,8 +9,12 @@ import { EMediaBreakpoints } from "../client/types";
 const Layout = () => {
   const navigate = useNavigate();
   const { breakpoint } = React.useContext(WindowSizeContext);
-  const [shouldSidebarCollapse, setShouldSidebarCollapse] = useState(false);
+  const [shouldSidebarCollapse, setShouldSidebarCollapse_] = useState(false);
   const [showOverlay, setShowOverlay] = useState(false);
+  const setShouldSidebarCollapse = (val: boolean) => {
+    setShouldSidebarCollapse_(val);
+    setShowOverlay(!val);
+  }
   const sidebarRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     navigate("/dashboard");
@@ -24,7 +28,7 @@ const Layout = () => {
   }, [breakpoint]);
 
   return (
-    <div id="layout" className="relative flex flex-row min-h-screen">
+    <div id="layout" className="relative flex min-h-screen flex-row">
       <div
         id="overlay"
         className={`fixed inset-0 z-40 bg-black bg-opacity-50 transition-opacity duration-200 ${showOverlay ? "opacity-100" : "pointer-events-none opacity-0"}`}
@@ -39,7 +43,10 @@ const Layout = () => {
         className={`fixed h-screen w-[256px] overflow-hidden rounded-r-lg border border-gray-300 transition-transform duration-200 ease-linear lg:static lg:h-full lg:translate-x-0 lg:rounded-l-lg ${shouldSidebarCollapse ? "-translate-x-[256px]" : "z-50"} `}
       >
         <nav className="left-0 top-0 z-50 h-full w-full">
-          <Nav />
+          <Nav
+            setShouldSidebarCollapse={setShouldSidebarCollapse}
+            shouldSidebarCollapse={shouldSidebarCollapse}
+          />
         </nav>
       </div>
       <div

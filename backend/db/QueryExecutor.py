@@ -58,6 +58,7 @@ class QueryExecutor:
             pipeline = (
                 self.pipeline_builder.reset()
                 .match_protocol(protocol)
+                .rename_field('src_region', 'region')
                 .sort("timestamp", -1)
                 .paginate(page, page_size)
                 .build()
@@ -75,6 +76,7 @@ class QueryExecutor:
             pipeline = (
                 self.pipeline_builder.reset()
                 .match_time_range(start_time, end_time)
+                .rename_field("src_region", "region")
                 .sort("timestamp", -1)
                 .paginate(page, page_size)
                 .build()
