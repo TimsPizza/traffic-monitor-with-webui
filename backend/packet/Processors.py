@@ -189,4 +189,4 @@ def check_handshake(scapy_packet, packet: ProcessedPacket) -> None:
 
 
 def add_uuid(scapy_packet, packet: ProcessedPacket) -> None:
-    packet.id = str(uuid4())
+    packet._id = str(uuid4())

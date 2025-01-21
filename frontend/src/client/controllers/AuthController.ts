@@ -1,10 +1,6 @@
-import { AuthService } from '../services/services';
-import {
-  TAuthResponse,
-  TLoginForm,
-  TSignUpForm,
-  TUser
-} from '../models/models';
+import { TLoginForm, TSignUpForm, TUser } from "../api/models/request";
+import { TAuthResponse } from "../api/models/response";
+import { AuthService } from "../services/auth";
 
 export class AuthController {
   public static async login(credentials: TLoginForm): Promise<TAuthResponse> {
@@ -12,7 +8,7 @@ export class AuthController {
       const response = await AuthService.login(credentials);
       return response;
     } catch (error) {
-      throw new Error('Login failed');
+      throw new Error("Login failed");
     }
   }
 
@@ -21,7 +17,7 @@ export class AuthController {
       const response = await AuthService.signup(formData);
       return response;
     } catch (error) {
-      throw new Error('Signup failed');
+      throw new Error("Signup failed");
     }
   }
 
@@ -29,7 +25,7 @@ export class AuthController {
     try {
       await AuthService.logout();
     } catch (error) {
-      throw new Error('Logout failed');
+      throw new Error("Logout failed");
     }
   }
 
@@ -38,7 +34,7 @@ export class AuthController {
       const response = await AuthService.refreshToken();
       return response;
     } catch (error) {
-      throw new Error('Token refresh failed');
+      throw new Error("Token refresh failed");
     }
   }
 
@@ -47,7 +43,7 @@ export class AuthController {
       const user = await AuthService.readUser();
       return user;
     } catch (error) {
-      throw new Error('Failed to fetch user data');
+      throw new Error("Failed to fetch user data");
     }
   }
 }

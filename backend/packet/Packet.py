@@ -18,7 +18,7 @@ class CapturedPacket:
 
 
 class ProcessedPacket(BaseModel):
-    id: str = ""
+    _id: str = ""  # mongo object id must be '_id'
     timestamp: float = -1
     layer: str = ""
     source_ip: str = ""

@@ -22,17 +22,16 @@ const Analytics = () => {
     data,
     isLoading,
     isError,
-    hasNextPage,
-    fetchNextPage,
-    hasPreviousPage,
-    fetchPreviousPage,
-  } = useAnalyticsQuery(queryType, queryParams);
+  } = useAnalyticsQuery('bySourceIP', {
+    sourceIP: queryParams.ipAddress,
+    startTime: queryParams.startTime,
+    endTime: queryParams.endTime
+  });
 
   const handleQuery = (type: TQueryType, params: any) => {
     setQueryType(type);
     setQueryParams((prev) => ({ ...prev, ...params }));
     console.log("setQueryParams", queryParams);
-    // setQueryParams((prev) => ({ ...prev, ...params }));
   };
 
   return (

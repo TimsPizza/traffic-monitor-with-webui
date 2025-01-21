@@ -1,5 +1,25 @@
-import { IByTopSourceIps } from './request';
-import { ITimeRange } from "./base";
+import { IPagination } from "./base";
+
+export interface IFullAccessRecordResponse {
+  id: string;
+  region: string;
+  src_ip: string;
+  dst_port: number;
+  protocol: string;
+  timestamp: number;
+  length: number;
+}
+
+export interface IPageInfo extends IPagination {
+  currentPage: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+export interface IBySourceIPResponse extends IPageInfo {
+  sourceIP: string;
+  data: IFullAccessRecordResponse[];
+}
 
 export interface IByProtocolResponseItem extends IFullAccessRecordResponse {}
 export interface IByProtocolResponse {
@@ -88,16 +108,6 @@ export interface IProtocolAnalysisResponseItem {}
 export interface IProtocolAnalysisResponse {
   records: IFullAccessRecordResponse[];
   total: number;
-}
-
-export interface IFullAccessRecordResponse {
-  id: string;
-  region: string;
-  src_ip: string;
-  dst_port: number;
-  protocol: string;
-  timestamp: number;
-  length: number;
 }
 
 export type TSignUpResponse = {

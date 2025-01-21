@@ -1,6 +1,6 @@
 from dataclasses import asdict
 import logging
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional, Type, Tuple
 from pymongo.collection import Collection
 from pymongo.database import Database
 
@@ -11,7 +11,6 @@ from service.AuthService import ENV_CONFIG
 from models.Dtos import (
     FullPacket,
     NetworkStats,
-    ProtocolAnalysis,
     TimeRange,
     TimeSeriesData,
     ProtocolDistribution,
@@ -40,19 +39,8 @@ class DatabaseOperations:
     def insert_packet(self, packet: ProcessedPacket) -> bool:
         """Insert a single processed packet into the database"""
         try:
-            # packet_dict = {
-            #     "timestamp": packet.timestamp,
-            #     "layer": packet.layer,
-            #     "source_ip": packet.source_ip,
-            #     "src_port": packet.src_port,
-            #     "dst_port": packet.dst_port,
-            #     "protocol": packet.protocol,
-            #     "length": packet.length,
-            # }
-
             result = self.packets_collection.insert_one(packet.model_dump())
             return bool(result.inserted_id)
-            return True
         except Exception as e:
             self.logger.error(f"Error inserting packet: {e}")
             return False
@@ -109,11 +97,15 @@ class DatabaseOperations:
     def find_packets_by_protocol(
         self,
         protocol: str,
+        start_time: float,
+        end_time: float,
         page: int,
         page_size: int,
     ) -> List[Dict[str, Any]]:
         """Find all packets with a specific protocol with pagination"""
-        return self.query_executor.find_packets_by_protocol(protocol, page, page_size)
+        return self.query_executor.find_packets_by_protocol(
+            protocol, start_time, end_time, page, page_size
+        )
 
     def find_packets_by_timerange(
         self,
@@ -127,38 +119,42 @@ class DatabaseOperations:
             start_time, end_time, page, page_size
         )
 
-    def get_protocol_analysis(
-        self, start_time: float, end_time: float
-    ) -> List[Dict[str, Any]]:
-        """Get protocol analysis for a given time range"""
-        return self.query_executor.get_protocol_distribution(start_time, end_time)
-
     def get_top_source_ips(
         self, start_time: float, end_time: float, page: int, page_size: int
     ) -> List[Dict[str, Any]]:
-        """Get top source IPs by packet count"""
-        """ set page, page_size to 999999 to get all data by default"""
+        """Get top source IPs by packet count with pagination"""
         return self.query_executor.get_top_source_ips(
             start_time, end_time, page, page_size
         )
 
     def get_protocol_distribution(
-        self, start_time: float, end_time: float
-    ) -> List[ProtocolDistribution]:
-        """Get protocol distribution for a given time range"""
-        return self.query_executor.get_protocol_distribution(start_time, end_time)
+        self, start_time: float, end_time: float, page: int, page_size: int
+    ) -> List[Dict[str, Any]]:
+        """Get protocol distribution for a given time range with pagination"""
+        return self.query_executor.get_protocol_distribution(
+            start_time, end_time, page, page_size
+        )
 
     def get_traffic_summary(
-        self, start_time: float, end_time: float
+        self, start_time: float, end_time: float, page: int, page_size: int
     ) -> List[Dict[str, Any]]:
-        """Get traffic summary for a given time range"""
-        return self.query_executor.get_traffic_summary(start_time, end_time)
+        """Get traffic summary for a given time range with pagination"""
+        return self.query_executor.get_traffic_summary(
+            start_time, end_time, page, page_size
+        )
 
     def get_time_series_data(
-        self, start_time: float, end_time: float, interval: int
+        self,
+        start_time: float,
+        end_time: float,
+        interval: int,
+        page: int,
+        page_size: int,
     ) -> List[Dict[str, Any]]:
-        """Get time series data for a given time range and interval"""
-        return self.query_executor.get_time_series_data(start_time, end_time, interval)
+        """Get time series data for a given time range and interval with pagination"""
+        return self.query_executor.get_time_series_data(
+            start_time, end_time, interval, page, page_size
+        )
 
     def delete_packets_before(self, timestamp: float) -> int:
         """Delete all packets before a specific timestamp"""

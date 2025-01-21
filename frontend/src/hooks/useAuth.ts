@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useToast from "./useToast";
-import { AuthService } from "../client/services/services";
 import { useMutation, useQuery } from "react-query";
-import { TLoginForm, TUser } from "../client/models/models";
+import { AuthService } from "../client/services/auth";
+import { TLoginForm } from "../client/api/models/request";
 
 export function useAuth() {
   const [error, setError] = useState(false);

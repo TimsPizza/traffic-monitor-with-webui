@@ -118,3 +118,16 @@ export type TQueryParams = {
   page?: number
   pageSize?: number
 }
+
+export interface IPageInfo {
+  currentPage: number;
+  pageSize: number;
+  total: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+export interface IBySourceIPResponse extends IPageInfo {
+  sourceIP: string;
+  data: IFullAccessRecordResponse[];
+}

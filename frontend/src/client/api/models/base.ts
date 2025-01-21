@@ -6,6 +6,7 @@ export interface ITimeRange {
 export interface IPagination {
   page: number;
   pageSize: number;
+  total: number;
 }
 
 export interface IRegion {

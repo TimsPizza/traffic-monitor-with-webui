@@ -1,10 +1,21 @@
 from pydantic import BaseModel, field_validator, model_validator
-from typing import Optional, List, Dict, Tuple, Union
+from typing import Any, Optional, List, Dict, Tuple, Union, Generic, TypeVar
+
+T = TypeVar("T")
+
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    """Paginated response DTO"""
+
+    total: int
+    page: int
+    page_size: int
+    data: Union[List[T], T]
 
 
 class FullPacket(BaseModel):
-    id: str
-    region: str = ""
+    id: str | int
+    src_region: str = ""
     src_ip: str = ""
     dst_port: int = -1
     protocol: str = ""
@@ -61,20 +72,13 @@ class NetworkStats(BaseModel):
     protocol_distribution: ProtocolDistribution
 
 
-class ProtocolAnalysis(BaseModel):
-    """Protocol analysis DTO"""
-
-    protocol: str
-    packet_count: int
-    source_ips: List[str]
-    avg_packet_size: float
-
-
 class TopSourceIP(BaseModel):
     """Top source IP analysis DTO"""
 
     ip: str
-    region: str
+    src_region: str
+    percentage_packets: float
+    percentage_bytes: float
     total_packets: int
     total_bytes: int
 

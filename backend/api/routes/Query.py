@@ -1,14 +1,15 @@
-from typing import List
+from typing import List, Callable, TypeVar, Any
+from functools import wraps
 from fastapi import APIRouter, Depends, Query
 from fastapi.security import OAuth2PasswordBearer
 from models.Dtos import (
     FullPacket,
     NetworkStats,
-    ProtocolAnalysis,
     TopSourceIP,
     ProtocolDistribution,
     TrafficSummary,
     TimeSeriesData,
+    PaginatedResponse,
 )
 from service.CrudService import CrudService
 
@@ -17,13 +18,15 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 crud_service = CrudService()
 
+T = TypeVar("T")
 
-@router.get("/time", response_model=List[FullPacket])
+
+@router.get("/time", response_model=PaginatedResponse[FullPacket])
 async def query_by_time(
     start_time: float,
     end_time: float,
     page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(50, ge=1, le=100, description="每页数量"),
+    page_size: int = Query(10, ge=1, le=100, description="每页数量"),
     token: str = Depends(oauth2_scheme),
 ):
     """
@@ -40,11 +43,13 @@ async def query_by_time(
     return crud_service.find_packets_by_timerange(start_time, end_time, page, page_size)
 
 
-@router.get("/protocol", response_model=List[FullPacket])
+@router.get("/protocol", response_model=PaginatedResponse[FullPacket])
 async def query_by_protocol(
     protocol: str,
+    start_time: float,
+    end_time: float,
     page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(50, ge=1, le=100, description="每页数量"),
+    page_size: int = Query(10, ge=1, le=100, description="每页数量"),
     token: str = Depends(oauth2_scheme),
 ):
     """
@@ -57,16 +62,18 @@ async def query_by_protocol(
     Returns:
         匹配协议类型的数据包列表
     """
-    return crud_service.find_packets_by_protocol(protocol, page, page_size)
+    return crud_service.find_packets_by_protocol(
+        protocol, start_time, end_time, page, page_size
+    )
 
 
-@router.get("/source-ip", response_model=List[FullPacket])
+@router.get("/source-ip", response_model=PaginatedResponse[FullPacket])
 async def query_by_source_ip(
     ip_address: str,
     start_time: float,
     end_time: float,
     page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(50, ge=1, le=100, description="每页数量"),
+    page_size: int = Query(10, ge=1, le=100, description="每页数量"),
     token: str = Depends(oauth2_scheme),
 ):
     """
@@ -84,30 +91,12 @@ async def query_by_source_ip(
     )
 
 
-@router.get("/protocol-analysis", response_model=List[ProtocolAnalysis])
-async def get_protocol_analysis(
-    start_time: float,
-    end_time: float,
-    token: str = Depends(oauth2_scheme),
-):
-    """
-    获取协议分析信息
-    Args:
-        start_time: 开始时间 (unix timestamp)
-        end_time: 结束时间 (unix timestamp)
-        token: 认证token
-    Returns:
-        协议分析信息
-    """
-    return crud_service.get_protocol_analysis(start_time, end_time)
-
-
-@router.get("/top-source-ips", response_model=List[TopSourceIP])
+@router.get("/top-source-ips", response_model=PaginatedResponse[TopSourceIP])
 async def get_top_source_ips(
     start_time: float,
     end_time: float,
     page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(50, ge=1, le=100, description="每页数量"),
+    page_size: int = Query(10, ge=1, le=100, description="每页数量"),
     token: str = Depends(oauth2_scheme),
 ):
     """
@@ -121,12 +110,14 @@ async def get_top_source_ips(
     return crud_service.get_top_source_ips(start_time, end_time, page, page_size)
 
 
-@router.get("/protocol-distribution", response_model=ProtocolDistribution)
+@router.get(
+    "/protocol-distribution", response_model=PaginatedResponse[ProtocolDistribution]
+)
 async def get_protocol_distribution(
     start_time: float,
     end_time: float,
     page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(50, ge=1, le=100, description="每页数量"),
+    page_size: int = Query(10, ge=1, le=100, description="每页数量"),
     token: str = Depends(oauth2_scheme),
 ):
     """
@@ -138,15 +129,15 @@ async def get_protocol_distribution(
     Returns:
         协议分布信息
     """
-    return crud_service.get_protocol_distribution(start_time, end_time)
+    return crud_service.get_protocol_distribution(start_time, end_time, page, page_size)
 
 
-@router.get("/traffic-summary", response_model=TrafficSummary)
+@router.get("/traffic-summary", response_model=PaginatedResponse[TrafficSummary])
 async def get_traffic_summary(
     start_time: float,
     end_time: float,
     page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(50, ge=1, le=100, description="每页数量"),
+    page_size: int = Query(10, ge=1, le=100, description="每页数量"),
     token: str = Depends(oauth2_scheme),
 ):
     """
@@ -158,14 +149,16 @@ async def get_traffic_summary(
     Returns:
         流量摘要信息
     """
-    return crud_service.get_traffic_summary(start_time, end_time)
+    return crud_service.get_traffic_summary(start_time, end_time, page, page_size)
 
 
-@router.get("/time-series", response_model=List[TimeSeriesData])
+@router.get("/time-series", response_model=PaginatedResponse[TimeSeriesData])
 async def get_time_series_data(
     start_time: float,
     end_time: float,
     interval: int = Query(60, ge=1, description="时间间隔（秒）"),
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(10, ge=1, le=100, description="每页数量"),
     token: str = Depends(oauth2_scheme),
 ):
     """
@@ -178,15 +171,18 @@ async def get_time_series_data(
     Returns:
         时间序列数据
     """
-    return crud_service.get_time_series_data(start_time, end_time, interval)
+    return crud_service.get_time_series_data(
+        start_time, end_time, interval, page, page_size
+    )
 
-@router.get("/port", response_model=List[FullPacket])
+
+@router.get("/port", response_model=PaginatedResponse[FullPacket])
 async def query_by_port(
     port: int,
     start_time: float,
     end_time: float,
     page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(50, ge=1, le=100, description="每页数量"),
+    page_size: int = Query(10, ge=1, le=100, description="每页数量"),
     token: str = Depends(oauth2_scheme),
 ):
     """
@@ -201,15 +197,18 @@ async def query_by_port(
     Returns:
         匹配端口号的数据包列表
     """
-    return crud_service.find_packets_by_port(port, start_time, end_time, page, page_size)
+    return crud_service.find_packets_by_port(
+        port, start_time, end_time, page, page_size
+    )
 
-@router.get("/region", response_model=List[FullPacket])
+
+@router.get("/region", response_model=PaginatedResponse[FullPacket])
 async def query_by_region(
     region: str,
     start_time: float,
     end_time: float,
     page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(50, ge=1, le=100, description="每页数量"),
+    page_size: int = Query(10, ge=1, le=100, description="每页数量"),
     token: str = Depends(oauth2_scheme),
 ):
     """
@@ -224,4 +223,6 @@ async def query_by_region(
     Returns:
         匹配地区的数据包列表
     """
-    return crud_service.find_packets_by_region(region, start_time, end_time, page, page_size)
+    return crud_service.find_packets_by_region(
+        region, start_time, end_time, page, page_size
+    )

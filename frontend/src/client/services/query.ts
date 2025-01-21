@@ -23,7 +23,32 @@ import {
   IByTopSourceIps,
 } from "../api/models/request";
 import { DataApi } from "../api/requests";
+
 export class QueryService {
+  private static queryMethods = {
+    'bySourceIP': QueryService.queryBySourceIP,
+    'byProtocol': QueryService.queryByProtocol,
+    'byTimeRange': QueryService.queryByTimeRange,
+    'byDestinationPort': QueryService.queryByDestinationPort,
+    'bySourceRegion': QueryService.queryBySourceRegion,
+    'protocolDistribution': QueryService.queryProtocolDistribution,
+    'trafficSummary': QueryService.queryTrafficSummary,
+    'timeSeries': QueryService.queryTimeSeries,
+    'protocolAnalysis': QueryService.queryProtocolAnaysis,
+    'topSourceIPs': QueryService.queryTopSourceIPs,
+  };
+
+  public static async query<TRequest extends object, TResponse>(
+    type: keyof typeof QueryService.queryMethods,
+    payload: TRequest
+  ): Promise<TResponse> {
+    const method = QueryService.queryMethods[type];
+    if (!method) {
+      throw new Error(`Invalid query type: ${type}`);
+    }
+    return method(payload as any) as Promise<TResponse>;
+  }
+
   public static async queryBySourceIP(
     config: IBySourceIP,
   ): Promise<IBySourceIPResponse> {
@@ -84,4 +109,3 @@ export class QueryService {
     return DataApi.getTopSourceIPs(config);
   }
 }
-

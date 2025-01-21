@@ -1,7 +1,6 @@
 import { useForm, SubmitHandler } from "react-hook-form";
-import { AuthService } from "../client/services/services";
-import { TLoginForm } from "../client/models/models";
 import { useAuth } from "../hooks/useAuth";
+import { TLoginForm } from "../client/api/models/request";
 
 export default function LoginPage() {
   const {

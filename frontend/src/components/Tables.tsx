@@ -6,10 +6,10 @@ import {
   getSortedRowModel,
   getPaginationRowModel,
 } from "@tanstack/react-table";
-import type { IAccessRecord } from "../client/models/models";
 import { useEffect } from "react";
+import { IFullAccessRecordResponse } from "../client/api/models/response";
 
-const columnHelper = createColumnHelper<IAccessRecord>();
+const columnHelper = createColumnHelper<IFullAccessRecordResponse>();
 
 const columns = [
   columnHelper.accessor("id", {
@@ -46,8 +46,10 @@ const columns = [
   }),
 ];
 
+// type TAcceptableTableData = IRe
+
 interface TableProps {
-  data: IAccessRecord[];
+  data: IFullAccessRecordResponse[];
   hasPreviousPage: boolean;
   hasNextPage: boolean;
   fetchNextPage: () => void;
