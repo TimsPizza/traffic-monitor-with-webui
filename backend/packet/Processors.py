@@ -3,6 +3,8 @@ from uuid import uuid4
 
 from .Packet import Layer, ProcessedPacket
 from service.GeoIpService import GeoIPSingleton
+import struct
+from scapy.all import TCP, Raw
 
 
 def check_udp(scapy_packet, packet: ProcessedPacket) -> None:
@@ -23,125 +25,236 @@ def check_tcp(scapy_packet, packet: ProcessedPacket) -> None:
         packet.protocol = Layer.TRANSPORT
 
 
+def check_http(payload: bytes) -> bool:
+    """HTTP协议特征检测"""
+    if len(payload) < 4:
+        return False
+    try:
+        decoded = payload.decode("utf-8", "ignore").strip()
+        return decoded.startswith(
+            (
+                "GET ",
+                "POST ",
+                "PUT ",
+                "DELETE ",
+                "HEAD ",
+                "OPTIONS ",
+                "HTTP/1.0",
+                "HTTP/1.1",
+            )
+        ) or any(s in decoded for s in ("Host: ", "User-Agent: ", "Content-Type: "))
+    except UnicodeDecodeError:
+        return False
+
+
+def check_tls(payload: bytes) -> bool:
+    """TLS/SSL协议特征检测"""
+    if len(payload) >= 3:
+        content_type = payload[0]
+        # TLS handshake content type is 0x16
+        if content_type == 0x16:
+            # Check for Handshake protocol (0x01)
+            if len(payload) >= 6 and payload[5] == 0x01:
+                return True
+    return False
+
+
+def check_ssh(payload: bytes) -> bool:
+    """SSH协议特征检测"""
+    return len(payload) >= 4 and payload.startswith(b"SSH")
+
+
+def check_dns_tcp(payload: bytes) -> bool:
+    """DNS over TCP特征检测"""
+    if len(payload) < 2:
+        return False
+    dns_length = struct.unpack("!H", payload[:2])[0]
+    return len(payload) >= dns_length + 2 and dns_length > 0
+
+
+def check_ftp(payload: bytes) -> bool:
+    """FTP协议特征检测"""
+    try:
+        decoded = payload.decode("ascii", "ignore").strip()
+        return (
+            decoded.startswith(("USER ", "PASS ", "CWD ", "LIST"))
+            or decoded[:3].isdecimal()
+            and len(decoded) >= 4
+            and decoded[3] == " "
+        )
+    except UnicodeDecodeError:
+        return False
+
+
+def check_smtp(payload: bytes) -> bool:
+    """SMTP协议特征检测"""
+    try:
+        decoded = payload.decode("ascii", "ignore").strip()
+        return (
+            decoded.startswith(("EHLO ", "HELO ", "MAIL FROM:")) or decoded[:3] == "220"
+        )
+    except UnicodeDecodeError:
+        return False
+
+
+def check_rtsp(payload: bytes) -> bool:
+    """RTSP协议特征检测"""
+    try:
+        decoded = payload.decode("ascii", "ignore").strip()
+        return (
+            decoded.startswith(("OPTIONS ", "DESCRIBE ", "SETUP "))
+            or "RTSP/1.0" in decoded
+        )
+    except UnicodeDecodeError:
+        return False
+
+
+def check_smb(payload: bytes) -> bool:
+    """SMB协议特征检测"""
+    return len(payload) >= 4 and payload[0] == 0x00 and payload[1:4] == b"\xffSMB"
+
+
+def check_ntp(payload: bytes) -> bool:
+    """NTP协议特征检测"""
+    return len(payload) >= 1 and (payload[0] & 0b11000111) == 0b00000011
+
+
+def check_rtp(payload: bytes) -> bool:
+    """RTP协议特征检测"""
+    return len(payload) >= 12 and (payload[0] & 0xC0) == 0x80
+
+
+def check_quic(payload: bytes) -> bool:
+    """QUIC协议特征检测"""
+    return len(payload) >= 6 and (payload[0] & 0x80) == 0x80 and payload[4:6] == b"Q0"
+
+
+def check_bittorrent(payload: bytes) -> bool:
+    """BitTorrent协议特征检测"""
+    return payload.startswith(b"\x13BitTorrent protocol") or b"8:announce" in payload
+
+
+def check_rdp(payload: bytes) -> bool:
+    """RDP协议特征检测"""
+    return len(payload) >= 4 and payload[0] == 0x03 and payload[1] == 0x00
+
+
+def check_sip(payload: bytes) -> bool:
+    """SIP协议特征检测"""
+    try:
+        decoded = payload.decode("ascii", "ignore").strip()
+        return decoded.startswith(("INVITE ", "REGISTER ", "SIP/2.0 "))
+    except UnicodeDecodeError:
+        return False
+
+
+def check_mysql(payload: bytes) -> bool:
+    """MySQL协议特征检测"""
+    if len(payload) < 4:
+        return False
+    length = struct.unpack("<I", payload[:3] + b"\x00")[0]
+    return len(payload) >= length + 4 and payload[3] == 0x00
+
+
 def check_application_protocol(scapy_packet, packet: ProcessedPacket) -> None:
-    if not scapy_packet.haslayer("TCP"):
+    if not scapy_packet.haslayer(TCP):
         return
+
     packet.layer = Layer.APPLICATION
+    sport = scapy_packet[TCP].sport
+    dport = scapy_packet[TCP].dport
+    payload = bytes(scapy_packet[TCP].payload) if scapy_packet.haslayer(Raw) else b""
 
-    sport = scapy_packet["TCP"].sport
-    dport = scapy_packet["TCP"].dport
+    # sort by most common protocols
+    protocol_checks = [
+        (check_http, "HTTP"),
+        (check_tls, "HTTPS"),
+        (check_ssh, "SSH"),
+        (check_dns_tcp, "DNS"),
+        (check_ftp, "FTP"),
+        (check_smtp, "SMTP"),
+        (check_rtsp, "RTSP"),
+        (check_smb, "SMB"),
+        (check_ntp, "NTP"),
+        (check_rdp, "RDP"),
+        (check_quic, "QUIC"),
+        (check_sip, "SIP"),
+        (check_mysql, "MySQL"),
+        (check_bittorrent, "BitTorrent"),
+        (check_rtp, "RTP"),
+    ]
 
-    match (sport, dport):
-        case (80, _) | (_, 80):
-            packet.protocol = "HTTP"
-        case (443, _) | (_, 443):
-            packet.protocol = "HTTPS"
-        case (53, _) | (_, 53):
-            packet.protocol = "DNS"
-        case (21, _) | (_, 21):
-            packet.protocol = "FTP"
-        case (22, _) | (_, 22):
-            packet.protocol = "SSH"
-        case (23, _) | (_, 23):
-            packet.protocol = "Telnet"
-        case (25, _) | (_, 25):
-            packet.protocol = "SMTP"
-        case (110, _) | (_, 110):
-            packet.protocol = "POP3"
-        case (143, _) | (_, 143):
-            packet.protocol = "IMAP"
-        case (3306, _) | (_, 3306):
-            packet.protocol = "MySQL"
-        case (3389, _) | (_, 3389):
-            packet.protocol = "RDP"
-        case (5900, _) | (_, 5900):
-            packet.protocol = "VNC"
-        case (6379, _) | (_, 6379):
-            packet.protocol = "Redis"
-        case (27017, _) | (_, 27017):
-            packet.protocol = "MongoDB"
-        case (5432, _) | (_, 5432):
-            packet.protocol = "PostgreSQL"
-        case (8080, _) | (_, 8080):
-            packet.protocol = "HTTP-ALT"
-        case (8443, _) | (_, 8443):
-            packet.protocol = "HTTPS-ALT"
-        case (161, _) | (_, 161):
-            packet.protocol = "SNMP"
-        case (389, _) | (_, 389):
-            packet.protocol = "LDAP"
-        case (636, _) | (_, 636):
-            packet.protocol = "LDAPS"
-        case (5060, _) | (_, 5060):
-            packet.protocol = "SIP"
-        case (5061, _) | (_, 5061):
-            packet.protocol = "SIPS"
-        case (1194, _) | (_, 1194):
-            packet.protocol = "OpenVPN"
-        case (1723, _) | (_, 1723):
-            packet.protocol = "PPTP"
-        case (5000, _) | (_, 5000):
-            packet.protocol = "UPnP"
-        case (5353, _) | (_, 5353):
-            packet.protocol = "mDNS"
-        case (1900, _) | (_, 1900):
-            packet.protocol = "SSDP"
-        case (514, _) | (_, 514):
-            packet.protocol = "Syslog"
-        case (69, _) | (_, 69):
-            packet.protocol = "TFTP"
-        case (123, _) | (_, 123):
-            packet.protocol = "NTP"
-        case (67, _) | (_, 67) | (68, _) | (_, 68):
-            packet.protocol = "DHCP"
-        case (137, _) | (_, 137) | (138, _) | (_, 138) | (139, _) | (_, 139):
-            packet.protocol = "NetBIOS"
-        case (445, _) | (_, 445):
-            packet.protocol = "SMB"
-        case (520, _) | (_, 520):
-            packet.protocol = "RIP"
-        case (179, _) | (_, 179):
-            packet.protocol = "BGP"
-        case (88, _) | (_, 88):
-            packet.protocol = "Kerberos"
-        case (548, _) | (_, 548):
-            packet.protocol = "AFP"
-        case (631, _) | (_, 631):
-            packet.protocol = "IPP"
-        case (873, _) | (_, 873):
-            packet.protocol = "Rsync"
-        case (992, _) | (_, 992):
-            packet.protocol = "Telnet over SSL"
-        case (993, _) | (_, 993):
-            packet.protocol = "IMAPS"
-        case (995, _) | (_, 995):
-            packet.protocol = "POP3S"
-        case (1812, _) | (_, 1812) | (1813, _) | (_, 1813):
-            packet.protocol = "RADIUS"
-        case (1645, _) | (_, 1645) | (1646, _) | (_, 1646):
-            packet.protocol = "RADIUS (legacy)"
-        case (3478, _) | (_, 3478) | (3479, _) | (_, 3479):
-            packet.protocol = "STUN/TURN"
-        case (500, _) | (_, 500) | (4500, _) | (_, 4500):
-            packet.protocol = "IPSec"
-        case (119, _) | (_, 119):
-            packet.protocol = "NNTP"
-        case (563, _) | (_, 563):
-            packet.protocol = "NNTPS"
-        case (6667, _) | (_, 6667):
-            packet.protocol = "IRC"
-        case (6697, _) | (_, 6697):
-            packet.protocol = "IRC over SSL"
-        case (10000, _) | (_, 10000):
-            packet.protocol = "Webmin"
-        case (11211, _) | (_, 11211):
-            packet.protocol = "Memcached"
-        case (27015, _) | (_, 27015):
-            packet.protocol = "Steam"
-        case (25565, _) | (_, 25565):
-            packet.protocol = "Minecraft"
-        case _:
-            packet.protocol = "Unknown"
+    # first check by payload
+    for check_func, proto in protocol_checks:
+        if check_func(payload):
+            packet.protocol = proto
+            return
+
+    # fallback to port-based protocol detection
+    port_map = {
+        80: "HTTP",
+        443: "HTTPS",
+        53: "DNS",
+        21: "FTP",
+        22: "SSH",
+        25: "SMTP",
+        110: "POP3",
+        143: "IMAP",
+        3306: "MySQL",
+        3389: "RDP",
+        5900: "VNC",
+        6379: "Redis",
+        27017: "MongoDB",
+        5432: "PostgreSQL",
+        8080: "HTTP-ALT",
+        8443: "HTTPS-ALT",
+        161: "SNMP",
+        389: "LDAP",
+        636: "LDAPS",
+        5060: "SIP",
+        5061: "SIPS",
+        1194: "OpenVPN",
+        1723: "PPTP",
+        5000: "UPnP",
+        5353: "mDNS",
+        1900: "SSDP",
+        514: "Syslog",
+        69: "TFTP",
+        123: "NTP",
+        67: "DHCP",
+        68: "DHCP",
+        137: "NetBIOS",
+        138: "NetBIOS",
+        139: "NetBIOS",
+        445: "SMB",
+        520: "RIP",
+        179: "BGP",
+        88: "Kerberos",
+        548: "AFP",
+        631: "IPP",
+        873: "Rsync",
+        992: "Telnet over SSL",
+        993: "IMAPS",
+        995: "POP3S",
+        1812: "RADIUS",
+        1813: "RADIUS",
+        1645: "RADIUS (legacy)",
+        1646: "RADIUS (legacy)",
+        3478: "STUN/TURN",
+        3479: "STUN/TURN",
+        500: "IPSec",
+        4500: "IPSec",
+        119: "NNTP",
+        563: "NNTPS",
+        6667: "IRC",
+        6697: "IRC over SSL",
+        10000: "Webmin",
+        11211: "Memcached",
+        27015: "Steam",
+        25565: "Minecraft",
+    }
+
+    packet.protocol = port_map.get(sport) or port_map.get(dport) or "Unknown"
 
 
 def check_ssh_type(scapy_packet, packet: ProcessedPacket):
