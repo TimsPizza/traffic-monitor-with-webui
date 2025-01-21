@@ -5,3 +5,4 @@ node_modules/
 *.prof
 GeoLite2-*.*
 *.mmdb
+.idea/
