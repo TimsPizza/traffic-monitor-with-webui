@@ -29,7 +29,10 @@ class QueryExecutor:
         """Execute a MongoDB aggregation pipeline"""
         try:
             print(pipeline)
-            return list(self.collection.aggregate(pipeline))
+            res = list(self.collection.aggregate(pipeline))
+            if len(res) == 0:
+                return []
+            return res[0]
         except Exception as e:
             self.logger.error(f"Error executing pipeline: {e}")
             return []

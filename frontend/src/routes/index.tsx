@@ -5,6 +5,7 @@ import { ProtectedRoute } from "./ProtectedRoute";
 import Login from "../pages/Login";
 import SignUp from "../pages/SignUp";
 import Analytics from "../pages/Analytics";
+import NotFound from "../pages/NotFound";
 const routes: RouteObject[] = [
   {
     path: "/",
@@ -32,5 +33,9 @@ const routes: RouteObject[] = [
     element: <SignUp />,
     children: [],
   },
+  {
+    path: "*",
+    element: <NotFound  />,
+  }
 ];
 export const router = createHashRouter(routes);

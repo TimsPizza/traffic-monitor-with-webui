@@ -40,7 +40,6 @@ const Chart: React.FC<ChartProps> = ({
   bordered = true,
 }) => {
   // color palette usage
-  const backgroundColor = "#F3F4F6";
   const titleColor = colorPalette[0];
   const primaryFill = colorPalette[1];
   const secondaryFill = colorPalette[2];
@@ -186,12 +185,11 @@ const Chart: React.FC<ChartProps> = ({
 
   return (
     <div
-      className={`flex h-full w-full flex-col`}
-      style={{
-        backgroundColor: backgroundColor,
-        border: bordered ? `1px solid ${borderColor}` : "none",
-        borderRadius: bordered ? "0.375rem" : "0",
-      }}
+      className={`flex h-full w-full flex-col rounded-lg bg-container-light`}
+      // style={{
+      //   border: bordered ? `1px solid ${borderColor}` : "none",
+      //   borderRadius: bordered ? "0.375rem" : "0",
+      // }}
     >
       {title && (
         <h2

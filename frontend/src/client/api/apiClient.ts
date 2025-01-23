@@ -1,5 +1,5 @@
-import axios, { AxiosInstance } from 'axios';
-import { RequestInterceptors, ResponseInterceptors } from './interceptors';
+import axios, { AxiosInstance } from "axios";
+import { RequestInterceptors, ResponseInterceptors } from "./interceptors";
 
 class ApiClient {
   public readonly instance: AxiosInstance;
@@ -9,16 +9,15 @@ class ApiClient {
       baseURL: import.meta.env.VITE_API_BASE_URL,
       timeout: 10000,
       headers: {
-        'Content-Type': 'application/json'
-      }
+        "Content-Type": "application/json",
+      },
     });
 
     // Setup interceptors
-    this.instance.interceptors.request.use(
-      RequestInterceptors.addAuthHeader
-    );
+    this.instance.interceptors.request.use(RequestInterceptors.addAuthHeader);
     this.instance.interceptors.response.use(
-      ResponseInterceptors.handleAuthError
+      null,
+      ResponseInterceptors.handleAuthError,
     );
   }
 }

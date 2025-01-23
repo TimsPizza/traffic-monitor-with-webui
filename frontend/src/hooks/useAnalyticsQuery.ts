@@ -1,17 +1,65 @@
-import { useInfiniteQuery } from "react-query";
+import { useInfiniteQuery, useQuery } from "react-query";
 import { QueryService } from "../client/services/query";
+import { useState } from "react";
+import { IPaginatedResponse } from "../client/api/models/response";
 
-export const useAnalyticsQuery = <T1 extends object, T2>(
-  type: 'bySourceIP' | 'byProtocol' | 'byTimeRange' | 'byDestinationPort' | 'bySourceRegion' | 'protocolDistribution' | 'trafficSummary' | 'timeSeries' | 'protocolAnalysis' | 'topSourceIPs',
-  payload: T1
+type TQueryType =
+  | "bySourceIP"
+  | "byProtocol"
+  | "byTimeRange"
+  | "byDestinationPort"
+  | "bySourceRegion"
+  | "protocolDistribution"
+  | "trafficSummary"
+  | "timeSeries"
+  | "protocolAnalysis"
+  | "topSourceIPs";
+
+const mapping: Record<
+  TQueryType,
+  (params: any) => Promise<IPaginatedResponse<any>>
+> = {
+  bySourceIP: QueryService.queryBySourceIP,
+  byProtocol: QueryService.queryByProtocol,
+  byTimeRange: QueryService.queryByTimeRange,
+  byDestinationPort: QueryService.queryByDestinationPort,
+  bySourceRegion: QueryService.queryBySourceRegion,
+  protocolDistribution: QueryService.queryProtocolDistribution,
+  trafficSummary: QueryService.queryTrafficSummary,
+  timeSeries: QueryService.queryTimeSeries,
+  protocolAnalysis: QueryService.queryProtocolAnaysis,
+  topSourceIPs: QueryService.queryTopSourceIPs,
+};
+
+export const useAnalyticsQuery = <TRequest = any, TResponse = any>(
+  queryType: TQueryType,
+  queryParams: TRequest,
+  refetchInterval: number | false = false,
 ) => {
-  return useInfiniteQuery<T2>({
-    queryKey: ["analytics", type, payload],
-    queryFn: ({ pageParam = 1 }) => QueryService.query<T1 & { page: number }, T2>(type, {
-      ...payload,
-      page: pageParam
-    }),
-    getNextPageParam: (lastPage) => lastPage.hasNextPage ? lastPage.nextPage : undefined,
-    getPreviousPageParam: (lastPage) => lastPage.hasPreviousPage ? lastPage.previousPage : undefined
+  const [hasPreviousPage, setHasPreviousPage] = useState(false);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  // data will be paginated response regardlessly
+  const [data, setData] = useState<TResponse | IPaginatedResponse<any>>();
+  const [error, setError] = useState<any>();
+  const { isLoading } = useQuery({
+    queryKey: ["analytics", queryType, queryParams],
+    queryFn: async () => await mapping[queryType](queryParams),
+    refetchInterval: refetchInterval || false, // dafault is false
+    onError: (err) => {
+      setError(err);
+    },
+    onSuccess: (res) => {
+      setData(res);
+      setHasNextPage(res.page * res.page_size < res.total);
+      setHasPreviousPage(res.page > 1);
+      res;
+    },
   });
+  return {
+    data,
+    error,
+    isLoading,
+    hasPreviousPage,
+    hasNextPage,
+  };
 };

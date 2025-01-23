@@ -23,8 +23,8 @@ T = TypeVar("T")
 
 @router.get("/time", response_model=PaginatedResponse[FullPacket])
 async def query_by_time(
-    start_time: float,
-    end_time: float,
+    start: float,
+    end: float,
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(10, ge=1, le=100, description="每页数量"),
     token: str = Depends(oauth2_scheme),
@@ -32,22 +32,22 @@ async def query_by_time(
     """
     按时间段查询数据包
     Args:
-        start_time: 开始时间 (unix timestamp)
-        end_time: 结束时间 (unix timestamp)
+        start: 开始时间 (unix timestamp)
+        end: 结束时间 (unix timestamp)
         page: 页码
         page_size: 每页数量
         token: 认证token
     Returns:
         时间段内的数据包列表
     """
-    return crud_service.find_packets_by_timerange(start_time, end_time, page, page_size)
+    return crud_service.find_packets_by_timerange(start, end, page, page_size)
 
 
 @router.get("/protocol", response_model=PaginatedResponse[FullPacket])
 async def query_by_protocol(
     protocol: str,
-    start_time: float,
-    end_time: float,
+    start: float,
+    end: float,
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(10, ge=1, le=100, description="每页数量"),
     token: str = Depends(oauth2_scheme),
@@ -62,16 +62,14 @@ async def query_by_protocol(
     Returns:
         匹配协议类型的数据包列表
     """
-    return crud_service.find_packets_by_protocol(
-        protocol, start_time, end_time, page, page_size
-    )
+    return crud_service.find_packets_by_protocol(protocol, start, end, page, page_size)
 
 
 @router.get("/source-ip", response_model=PaginatedResponse[FullPacket])
 async def query_by_source_ip(
     ip_address: str,
-    start_time: float,
-    end_time: float,
+    start: float,
+    end: float,
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(10, ge=1, le=100, description="每页数量"),
     token: str = Depends(oauth2_scheme),
@@ -86,15 +84,13 @@ async def query_by_source_ip(
     Returns:
         匹配源IP地址的数据包列表
     """
-    return crud_service.find_packets_by_ip(
-        ip_address, start_time, end_time, page, page_size
-    )
+    return crud_service.find_packets_by_ip(ip_address, start, end, page, page_size)
 
 
 @router.get("/top-source-ips", response_model=PaginatedResponse[TopSourceIP])
 async def get_top_source_ips(
-    start_time: float,
-    end_time: float,
+    start: float,
+    end: float,
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(10, ge=1, le=100, description="每页数量"),
     token: str = Depends(oauth2_scheme),
@@ -107,15 +103,15 @@ async def get_top_source_ips(
     Returns:
         流量最大的源IP地址列表
     """
-    return crud_service.get_top_source_ips(start_time, end_time, page, page_size)
+    return crud_service.get_top_source_ips(start, end, page, page_size)
 
 
 @router.get(
     "/protocol-distribution", response_model=PaginatedResponse[ProtocolDistribution]
 )
 async def get_protocol_distribution(
-    start_time: float,
-    end_time: float,
+    start: float,
+    end: float,
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(10, ge=1, le=100, description="每页数量"),
     token: str = Depends(oauth2_scheme),
@@ -123,19 +119,19 @@ async def get_protocol_distribution(
     """
     获取协议分布信息
     Args:
-        start_time: 开始时间 (unix timestamp)
-        end_time: 结束时间 (unix timestamp)
+        start: 开始时间 (unix timestamp)
+        end: 结束时间 (unix timestamp)
         token: 认证token
     Returns:
         协议分布信息
     """
-    return crud_service.get_protocol_distribution(start_time, end_time, page, page_size)
+    return crud_service.get_protocol_distribution(start, end, page, page_size)
 
 
 @router.get("/traffic-summary", response_model=PaginatedResponse[TrafficSummary])
 async def get_traffic_summary(
-    start_time: float,
-    end_time: float,
+    start: float,
+    end: float,
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(10, ge=1, le=100, description="每页数量"),
     token: str = Depends(oauth2_scheme),
@@ -143,19 +139,19 @@ async def get_traffic_summary(
     """
     获取流量摘要信息
     Args:
-        start_time: 开始时间 (unix timestamp)
-        end_time: 结束时间 (unix timestamp)
+        start: 开始时间 (unix timestamp)
+        end: 结束时间 (unix timestamp)
         token: 认证token
     Returns:
         流量摘要信息
     """
-    return crud_service.get_traffic_summary(start_time, end_time, page, page_size)
+    return crud_service.get_traffic_summary(start, end, page, page_size)
 
 
 @router.get("/time-series", response_model=PaginatedResponse[TimeSeriesData])
 async def get_time_series_data(
-    start_time: float,
-    end_time: float,
+    start: float,
+    end: float,
     interval: int = Query(60, ge=1, description="时间间隔（秒）"),
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(10, ge=1, le=100, description="每页数量"),
@@ -164,23 +160,21 @@ async def get_time_series_data(
     """
     获取时间序列数据
     Args:
-        start_time: 开始时间 (unix timestamp)
-        end_time: 结束时间 (unix timestamp)
+        start: 开始时间 (unix timestamp)
+        end: 结束时间 (unix timestamp)
         interval: 时间间隔（秒）
         token: 认证token
     Returns:
         时间序列数据
     """
-    return crud_service.get_time_series_data(
-        start_time, end_time, interval, page, page_size
-    )
+    return crud_service.get_time_series_data(start, end, interval, page, page_size)
 
 
 @router.get("/port", response_model=PaginatedResponse[FullPacket])
 async def query_by_port(
     port: int,
-    start_time: float,
-    end_time: float,
+    start: float,
+    end: float,
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(10, ge=1, le=100, description="每页数量"),
     token: str = Depends(oauth2_scheme),
@@ -189,24 +183,22 @@ async def query_by_port(
     按端口号查询数据包
     Args:
         port: 目标端口号
-        start_time: 开始时间 (unix timestamp)
-        end_time: 结束时间 (unix timestamp)
+        start: 开始时间 (unix timestamp)
+        end: 结束时间 (unix timestamp)
         page: 页码
         page_size: 每页数量
         token: 认证token
     Returns:
         匹配端口号的数据包列表
     """
-    return crud_service.find_packets_by_port(
-        port, start_time, end_time, page, page_size
-    )
+    return crud_service.find_packets_by_port(port, start, end, page, page_size)
 
 
 @router.get("/region", response_model=PaginatedResponse[FullPacket])
 async def query_by_region(
     region: str,
-    start_time: float,
-    end_time: float,
+    start: float,
+    end: float,
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(10, ge=1, le=100, description="每页数量"),
     token: str = Depends(oauth2_scheme),
@@ -215,14 +207,12 @@ async def query_by_region(
     按地区查询数据包
     Args:
         region: 地区名称
-        start_time: 开始时间 (unix timestamp)
-        end_time: 结束时间 (unix timestamp)
+        start: 开始时间 (unix timestamp)
+        end: 结束时间 (unix timestamp)
         page: 页码
         page_size: 每页数量
         token: 认证token
     Returns:
         匹配地区的数据包列表
     """
-    return crud_service.find_packets_by_region(
-        region, start_time, end_time, page, page_size
-    )
+    return crud_service.find_packets_by_region(region, start, end, page, page_size)

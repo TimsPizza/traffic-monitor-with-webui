@@ -71,16 +71,16 @@ const Tables: React.FC<TableProps> = ({ data, hasNextPage, hasPreviousPage, fetc
 
   return (
     <div className="flex h-full w-full flex-col">
-      <div className="overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto rounded-lg">
         <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
           <table className="w-full divide-y divide-gray-200">
-            <thead className="sticky top-0 z-10 bg-gray-50">
+            <thead className="sticky top-0 z-10 bg-container-light border-t border-l border-r">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
-                      className="cursor-pointer bg-gray-50 px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                      className="cursor-pointer bg-bg-light px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
                       onClick={header.column.getToggleSortingHandler()}
                     >
                       {flexRender(
@@ -96,7 +96,7 @@ const Tables: React.FC<TableProps> = ({ data, hasNextPage, hasPreviousPage, fetc
               {table.getRowModel().rows.map((row, index) => (
                 <tr
                   key={row.id}
-                  className={`hover:bg-gray-50 ${index % 2 ? "bg-gray-100" : "bg-white"}`}
+                  className={`hover:bg-gray-50 bg-container-light`}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td

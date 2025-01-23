@@ -15,7 +15,7 @@ export interface IByDestinationPort extends IPagination, ITimeRange {
 }
 
 export interface IBySourceIP extends IPagination, ITimeRange {
-  sourceIP: string;
+  ip_address: string;
 }
 
 export interface IProtocolDistribution extends ITimeRange, IPagination {}

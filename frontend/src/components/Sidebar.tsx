@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 
-const Nav: React.FC<{
+const Sidebar: React.FC<{
   shouldSidebarCollapse: boolean;
   setShouldSidebarCollapse: (val: boolean) => void;
 }> = ({ shouldSidebarCollapse, setShouldSidebarCollapse }) => {
   const navItems = [
-    { path: "/", icon: "bi-house", label: "Dashboard" },
+    { path: "/dashboard", icon: "bi-house", label: "Dashboard" },
     { path: "/settings", icon: "bi-gear", label: "Settings" },
     { path: "/analytics", icon: "bi-graph-up", label: "Analytics" },
     { path: "/reports", icon: "bi-file-earmark-text", label: "Reports" },
@@ -40,4 +40,4 @@ const Nav: React.FC<{
   );
 };
 
-export default Nav;
+export default Sidebar;

@@ -33,14 +33,14 @@ const Card: React.FC<ICardProps> = ({
   return (
     <div
       id="card-wrapper"
-      className={`flex max-h-72 min-h-36 flex-col justify-center rounded-md border border-gray-300 bg-[#F3F4F6]`}
-      style={{ boxShadow: "3px 3px 3px -4px #000000", color: colorPalette[0] }}
+      className={`flex max-h-72 min-h-36 flex-col justify-center rounded-lg bg-container-light`}
+      // style={{ boxShadow: "3px 3px 3px -4px #000000", color: colorPalette[0] }}
     >
       {cardType === "classic" ? (
         <>
           <div
             id="card-title"
-            className="w-full self-start border-b border-gray-300 p-1"
+            className="w-full self-start  p-1"
           >
             <span className="text-2xl font-bold">{title}</span>
           </div>

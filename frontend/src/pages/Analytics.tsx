@@ -1,9 +1,10 @@
 import { useState } from "react";
 import Tables from "../components/Tables";
-import { TQueryParams, TQueryType } from "../client/types";
+import { IBySourceIPResponse, TQueryParams, TQueryType } from "../client/types";
 import { useAnalyticsQuery } from "../hooks/useAnalyticsQuery";
 import { date2Unix } from "../utils/timetools";
 import { Prev } from "react-bootstrap/esm/PageItem";
+import { IBySourceIP } from "../client/api/models/request";
 
 const Analytics = () => {
   const [queryType, setQueryType] = useState<"time" | "protocol" | "source-ip">(
@@ -15,18 +16,21 @@ const Analytics = () => {
     protocol: "",
     ipAddress: "",
     page: 1,
-    pageSize: 50,
+    pageSize: 20,
   });
 
-  const {
-    data,
-    isLoading,
-    isError,
-  } = useAnalyticsQuery('bySourceIP', {
-    sourceIP: queryParams.ipAddress,
-    startTime: queryParams.startTime,
-    endTime: queryParams.endTime
-  });
+  const { data, error, isLoading, hasNextPage, hasPreviousPage } =
+    useAnalyticsQuery<IBySourceIP, IBySourceIPResponse>(
+      "bySourceIP",
+      {
+        ip_address: queryParams.ipAddress || "",
+        start: queryParams.startTime || 0,
+        end: queryParams.endTime || new Date().getTime() / 1e3,
+        page: queryParams.page || 1,
+        page_size: queryParams.pageSize || 20,
+      },
+      5000,
+    );
 
   const handleQuery = (type: TQueryType, params: any) => {
     setQueryType(type);
@@ -72,14 +76,14 @@ const Analytics = () => {
       </div>
 
       {isLoading && <div>Loading...</div>}
-      {isError && <div>Error fetching data</div>}
+      {error && <div>Error fetching data</div>}
       {data && (
         <Tables
           data={data}
           hasPreviousPage={hasPreviousPage}
           hasNextPage={hasNextPage}
-          fetchNextPage={fetchNextPage}
-          fetchPreviousPage={fetchPreviousPage}
+          // fetchNextPage={setQueryParams((prev) => ({ ...prev, page: prev.page + 1 }))}
+          // fetchPreviousPage={fetchPreviousPage}
         />
       )}
     </div>

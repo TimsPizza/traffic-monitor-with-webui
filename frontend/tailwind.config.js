@@ -18,6 +18,12 @@ module.exports = {
         sourceCodePro: ["Source Code Pro", "monospace"],
       },
       colors: {
+        "bg-light": "#F4F7FD",
+        "bg-dark": "#1F2937",
+        "container-light": "#FFFFFF",
+        "container-dark": "#111827",
+        "text-light": "#1F2937",
+        "text-dark": "#FFFFFF",
         success: "#47D764",
         error: "#FF355B",
         warning: "#FFC021",

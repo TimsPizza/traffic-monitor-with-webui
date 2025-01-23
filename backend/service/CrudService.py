@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import List, Type, Tuple
+from typing import List, Type, Tuple, Optional, Dict, Any
 from models.Dtos import (
     FullPacket,
     NetworkStats,
@@ -18,6 +18,40 @@ class CrudService:
     def __init__(self):
         self.db_ops = DatabaseOperations()
 
+    def _build_paginated_response(
+        self,
+        raw_data: Dict[str, Any],
+        page: int,
+        page_size: int,
+        data_builder: callable,
+    ) -> PaginatedResponse:
+        """Build paginated response with error handling"""
+        if not raw_data or not raw_data.get("metadata") or not raw_data.get("data"):
+            return PaginatedResponse(total=0, page=page, page_size=page_size, data=[])
+
+        meta_data = raw_data["metadata"]
+        data = raw_data["data"]
+        total_docs = meta_data[0]["total_documents"] if meta_data else 0
+
+        return PaginatedResponse(
+            total=total_docs,
+            page=page,
+            page_size=page_size,
+            data=data_builder(data) if data else [],
+        )
+
+    def _build_full_packet(self, doc: Dict[str, Any], index: int = 0) -> FullPacket:
+        """Build FullPacket from raw document"""
+        return FullPacket(
+            id=str(doc.get("_id", (index + 1))),
+            timestamp=doc.get("timestamp", 0),
+            src_ip=doc.get("source_ip", ""),
+            dst_port=doc.get("dst_port", 0),
+            protocol=doc.get("protocol", ""),
+            length=doc.get("length", 0),
+            src_region=doc.get("src_region", "Unknown"),
+        )
+
     def find_packets_by_ip(
         self,
         ip_address: str,
@@ -29,28 +63,15 @@ class CrudService:
         """Find packets by source IP with pagination"""
         raw_data = self.db_ops.find_packets_by_ip(
             ip_address, start_time, end_time, page, page_size
-        )[0]
-        print(raw_data)
-        meta_data = raw_data["metadata"]
-        data = raw_data["data"]
-        total_docs = meta_data[0]["total_documents"]
-        packets = [
-            FullPacket(
-                id=(page - 1) * page_size + index,
-                timestamp=doc["timestamp"],
-                src_ip=doc["source_ip"],
-                dst_port=doc["dst_port"],
-                protocol=doc["protocol"],
-                length=doc["length"],
-                src_region=(doc["src_region"] if "src_region" in doc else "Unknown"),
-            )
-            for index, doc in enumerate(data)
-        ]
-        return PaginatedResponse(
-            total=total_docs,
-            page=page,
-            page_size=page_size,
-            data=packets,
+        )
+
+        return self._build_paginated_response(
+            raw_data,
+            page,
+            page_size,
+            lambda data: [
+                self._build_full_packet(doc, idx) for idx, doc in enumerate(data)
+            ],
         )
 
     def find_packets_by_port(
@@ -64,28 +85,13 @@ class CrudService:
         """Find packets by destination port with pagination"""
         raw_data = self.db_ops.find_packets_by_port(
             port, start_time, end_time, page, page_size
-        )[0]
-        print(raw_data)
-        meta_data = raw_data["metadata"]
-        data = raw_data["data"]
-        total_docs = meta_data[0]["total_documents"]
-        packets = [
-            FullPacket(
-                id=str(doc["_id"]),
-                timestamp=doc["timestamp"],
-                src_ip=doc["source_ip"],
-                dst_port=doc["dst_port"],
-                protocol=doc["protocol"],
-                length=doc["length"],
-                src_region=(doc["src_region"] if "src_region" in doc else "Unknown"),
-            )
-            for doc in data
-        ]
-        return PaginatedResponse(
-            total=total_docs,
-            page=page,
-            page_size=page_size,
-            data=packets,
+        )
+
+        return self._build_paginated_response(
+            raw_data,
+            page,
+            page_size,
+            lambda data: [self._build_full_packet(doc) for doc in data],
         )
 
     def find_packets_by_region(
@@ -99,27 +105,13 @@ class CrudService:
         """Find packets by src_region with pagination"""
         raw_data = self.db_ops.find_packets_by_region(
             src_region, start_time, end_time, page, page_size
-        )[0]
-        meta_data = raw_data["metadata"]
-        data = raw_data["data"]
-        total_docs = meta_data[0]["total_documents"]
-        packets = [
-            FullPacket(
-                id=str(doc["_id"]),
-                timestamp=doc["timestamp"],
-                src_ip=doc["source_ip"],
-                dst_port=doc["dst_port"],
-                protocol=doc["protocol"],
-                length=doc["length"],
-                src_region=(doc["src_region"] if "src_region" in doc else "Unknown"),
-            )
-            for doc in data
-        ]
-        return PaginatedResponse(
-            total=total_docs,
-            page=page,
-            page_size=page_size,
-            data=packets,
+        )
+
+        return self._build_paginated_response(
+            raw_data,
+            page,
+            page_size,
+            lambda data: [self._build_full_packet(doc) for doc in data],
         )
 
     def find_packets_by_protocol(
@@ -133,28 +125,15 @@ class CrudService:
         """Find all packets with a specific protocol with pagination"""
         raw_data = self.db_ops.find_packets_by_protocol(
             protocol, start_time, end_time, page, page_size
-        )[0]
-        print(raw_data)
-        meta_data = raw_data["metadata"]
-        data = raw_data["data"]
-        total_docs = meta_data[0]["total_documents"]
-        packets = [
-            FullPacket(
-                id=(page - 1) * page_size + index,
-                timestamp=doc["timestamp"],
-                src_ip=doc["source_ip"],
-                dst_port=doc["dst_port"],
-                protocol=doc["protocol"],
-                length=doc["length"],
-                src_region=(doc["src_region"] if "src_region" in doc else "Unknown"),
-            )
-            for index, doc in enumerate(data)
-        ]
-        return PaginatedResponse(
-            total=total_docs,
-            page=page,
-            page_size=page_size,
-            data=packets,
+        )
+
+        return self._build_paginated_response(
+            raw_data,
+            page,
+            page_size,
+            lambda data: [
+                self._build_full_packet(doc, idx) for idx, doc in enumerate(data)
+            ],
         )
 
     def find_packets_by_timerange(
@@ -167,42 +146,28 @@ class CrudService:
         """Find all packets within a specific time range with pagination"""
         raw_data = self.db_ops.find_packets_by_timerange(
             start_time, end_time, page, page_size
-        )[0]
-        print(raw_data)
-        meta_data = raw_data["metadata"]
-        data = raw_data["data"]
-        total_docs = meta_data[0]["total_documents"]
-        packets = [
-            FullPacket(
-                id=(page - 1) * page_size + index,
-                timestamp=doc["timestamp"],
-                src_ip=doc["source_ip"],
-                dst_port=doc["dst_port"],
-                protocol=doc["protocol"],
-                src_region=(doc["src_region"] if "src_region" in doc else "Unknown"),
-            )
-            for index, doc in enumerate(data)
-        ]
-        return PaginatedResponse(
-            total=total_docs,
-            page=page,
-            page_size=page_size,
-            data=packets,
+        )
+
+        return self._build_paginated_response(
+            raw_data,
+            page,
+            page_size,
+            lambda data: [
+                self._build_full_packet(doc, idx) for idx, doc in enumerate(data)
+            ],
         )
 
     def get_top_source_ips(
         self, start_time: float, end_time: float, page: int, page_size: int
     ) -> PaginatedResponse[TopSourceIP]:
         """Get top source IPs by packet count"""
-        raw_data = self.db_ops.get_top_source_ips(
-            start_time, end_time, page, page_size
-        )[0]
+        raw_data = self.db_ops.get_top_source_ips(start_time, end_time, page, page_size)
         meta_data = raw_data["metadata"]
         data = raw_data["data"]
         total_docs = meta_data[0]["total_documents"]
         total_packets = sum(doc["total_packets"] for doc in data)
         total_bytes = sum(doc["total_bytes"] for doc in data)
-        print(raw_data)
+
         top_ips = [
             TopSourceIP(
                 ip=doc["source_ip"],
@@ -227,7 +192,7 @@ class CrudService:
         """Get protocol distribution for a given time range"""
         raw_data = self.db_ops.get_protocol_distribution(
             start_time, end_time, page, page_size
-        )[0]
+        )
         meta_data = raw_data["metadata"]
         data = raw_data["data"]
 
@@ -290,8 +255,7 @@ class CrudService:
         """Get time series data for a given time range and interval"""
         raw_data = self.db_ops.get_time_series_data(
             start_time, end_time, interval, page, page_size
-        )[0]
-        print(raw_data)
+        )
         meta_data = raw_data["metadata"]
         data = raw_data["data"]
         total_docs = meta_data[0]["total_documents"]

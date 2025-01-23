@@ -1,4 +1,11 @@
-import { IPagination } from "./base";
+import { ITimeRange } from "./base";
+
+export interface IPaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  page_size: number;
+}
 
 export interface IFullAccessRecordResponse {
   id: string;
@@ -10,105 +17,65 @@ export interface IFullAccessRecordResponse {
   length: number;
 }
 
-export interface IPageInfo extends IPagination {
-  currentPage: number;
-  hasNextPage: boolean;
-  hasPreviousPage: boolean;
-}
-
-export interface IBySourceIPResponse extends IPageInfo {
-  sourceIP: string;
-  data: IFullAccessRecordResponse[];
-}
-
 export interface IByProtocolResponseItem extends IFullAccessRecordResponse {}
-export interface IByProtocolResponse {
-  records: IFullAccessRecordResponse[];
-  total: number;
-}
+export interface IByProtocolResponse extends IPaginatedResponse<IByProtocolResponseItem> {}
 
 export interface IByRegionResponseItem extends IFullAccessRecordResponse {}
-export interface IByRegionResponse {
-  records: IFullAccessRecordResponse[];
-  total: number;
-}
+export interface IByRegionResponse extends IPaginatedResponse<IByRegionResponseItem> {}
 
 export interface IByTimeRangeResponseItem extends IFullAccessRecordResponse {}
-export interface IByTimeRangeResponse {
-  records: IFullAccessRecordResponse[];
-  total: number;
-}
+export interface IByTimeRangeResponse extends IPaginatedResponse<IByTimeRangeResponseItem> {}
 
-export interface IBySourceIpResponseItem extends IFullAccessRecordResponse{}
-export interface IBySourceIPResponse {
-  records: IFullAccessRecordResponse[];
-  total: number;
-}
+export interface IBySourceIpResponseItem extends IFullAccessRecordResponse {}
+export interface IBySourceIPResponse
+  extends IPaginatedResponse<IBySourceIpResponseItem> {}
 
-export interface IByDestinationPortResponseItem extends IFullAccessRecordResponse {}
-export interface IByDestinationPortResponse {
-  records: IFullAccessRecordResponse[];
-  total: number;
-}
+export interface IByDestinationPortResponseItem
+  extends IFullAccessRecordResponse {}
+export interface IByDestinationPortResponse
+  extends IPaginatedResponse<IByDestinationPortResponseItem> {}
 
-export interface IBySourceRegionResponseItem extends IFullAccessRecordResponse {}
+export interface IBySourceRegionResponseItem
+  extends IFullAccessRecordResponse {}
+export interface IBySourceRegionResponse
+  extends IPaginatedResponse<IBySourceRegionResponseItem> {}
 
-export interface IBySourceRegionResponse {
-  records: IFullAccessRecordResponse[];
-  total: number;
-}
-
-export interface IByTopSourceIpsResponseItem  {
+export interface IByTopSourceIpsResponseItem {
   ip: string;
   region: string;
   totalPackets: number;
   totalBytes: number;
 }
-
-export interface IByTopSourceIpsResponse {
-  records: IByTopSourceIpsResponseItem[];
-  total: number;
-}
+export interface IByTopSourceIpsResponse
+  extends IPaginatedResponse<IByTopSourceIpsResponseItem> {}
 
 export interface ITrafficSummaryResponseItem {
-  totalPackets: number;
-  totalBytes: number;
-  topSourceIps:IByTopSourceIpsResponse;
-  protocolDistribution:IProtocolDistributionResponse;
-  timeRange: ITimeRange;
-}
-
-export interface ITrafficSummaryResponse {
   total_packets: number;
   total_bytes: number;
+  top_source_ips: IByTopSourceIpsResponse;
+  protocol_distribution: IProtocolDistributionResponse;
+  time_range: ITimeRange;
 }
+export interface ITrafficSummaryResponse
+  extends IPaginatedResponse<ITrafficSummaryResponseItem> {}
 
 export interface IProtocolDistributionResponseRecord {
   protocol: string;
-  percentageCount: number;
-  percentageBytes: number;
-  packetCount: number;
-  totalBytes: number;
+  percentage_count: number;
+  percentage_bytes: number;
+  packet_count: number;
+  total_bytes: number;
 }
-
-export interface IProtocolDistributionResponse {
-  distribution: IProtocolDistributionResponseRecord[];
-  timeRange: ITimeRange;
-}
+export interface IProtocolDistributionResponse
+  extends IPaginatedResponse<IProtocolDistributionResponseRecord> {}
 
 export interface ITimeSeriesResponseItem {}
-
-export interface ITimeSeriesResponse {
-  records: IFullAccessRecordResponse[];
-  total: number;
-}
+export interface ITimeSeriesResponse
+  extends IPaginatedResponse<ITimeSeriesResponseItem> {}
 
 export interface IProtocolAnalysisResponseItem {}
-
-export interface IProtocolAnalysisResponse {
-  records: IFullAccessRecordResponse[];
-  total: number;
-}
+export interface IProtocolAnalysisResponse
+  extends IPaginatedResponse<IProtocolAnalysisResponseItem> {}
 
 export type TSignUpResponse = {
   username: string;

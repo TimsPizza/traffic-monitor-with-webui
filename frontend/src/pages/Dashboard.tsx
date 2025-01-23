@@ -16,7 +16,7 @@ const Dashboard = () => {
   return (
     <div
       id="dashboard-wrapper"
-      className="h-full w-full rounded-md border border-gray-300"
+      className="h-full w-full rounded-md"
     >
       <Row className="px-2 mt-2">
         <Col
