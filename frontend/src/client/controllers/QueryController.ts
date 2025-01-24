@@ -1,29 +1,17 @@
-import { IFullAccessRecordResponse } from "../api/models/response";
-import { QueryService } from "../services/query";
-import { TQueryParams } from "../types";
 import {
-  IBySourceIP,
-  IByProtocol,
-  IByTimeRange,
   IByDestinationPort,
+  IByProtocol,
+  IBySourceIP,
   IBySourceRegion,
-  IProtocolDistribution,
-  ITrafficSummary,
-  ITimeSeries,
-  IProtocolAnalysis,
+  IByTimeRange,
   IByTopSourceIps,
+  IProtocolAnalysis,
+  IProtocolDistribution,
+  ITimeSeries,
+  ITrafficSummary,
 } from "../api/models/request";
-
-type TQueryType = 
-  | 'bySourceIP'
-  | 'byProtocol' 
-  | 'byTimeRange'
-  | 'byDestinationPort'
-  | 'bySourceRegion'
-  | 'protocolDistribution'
-  | 'trafficSummary'
-  | 'timeSeries'
-  | 'topSourceIPs';
+import { QueryService } from "../services/query";
+import { TQueryType } from "../types";
 
 export class QueryController {
   public static async query<

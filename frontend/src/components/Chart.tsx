@@ -55,7 +55,7 @@ const Chart: React.FC<ChartProps> = ({
         return (
           <AreaChart
             data={data}
-            margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+            margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
           >
             <defs>
               <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
@@ -100,7 +100,7 @@ const Chart: React.FC<ChartProps> = ({
         return (
           <AreaChart
             data={data}
-            margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+            margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
           >
             <defs>
               <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
@@ -162,7 +162,7 @@ const Chart: React.FC<ChartProps> = ({
 
       case EChartType.PIE:
         return (
-          <PieChart margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+          <PieChart margin={{ top: 10, right: 10, left: 20, bottom: 0 }}>
             <Pie
               data={data as TPieData[]}
               dataKey="value"

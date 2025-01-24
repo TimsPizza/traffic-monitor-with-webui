@@ -50,13 +50,23 @@ const columns = [
 
 interface TableProps {
   data: IFullAccessRecordResponse[];
+  currentPage: number;
+  maxPage: number;
   hasPreviousPage: boolean;
   hasNextPage: boolean;
   fetchNextPage: () => void;
   fetchPreviousPage: () => void;
 }
 
-const Tables: React.FC<TableProps> = ({ data, hasNextPage, hasPreviousPage, fetchNextPage, fetchPreviousPage }) => {
+const Tables: React.FC<TableProps> = ({
+  data,
+  currentPage,
+  maxPage,
+  hasNextPage,
+  hasPreviousPage,
+  fetchNextPage,
+  fetchPreviousPage,
+}) => {
   useEffect(() => {
     console.log("table", data);
   }, [data]);
@@ -74,7 +84,7 @@ const Tables: React.FC<TableProps> = ({ data, hasNextPage, hasPreviousPage, fetc
       <div className="overflow-x-auto rounded-lg">
         <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
           <table className="w-full divide-y divide-gray-200">
-            <thead className="sticky top-0 z-10 bg-container-light border-t border-l border-r">
+            <thead className="sticky top-0 border-l border-r border-t bg-container-light">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
@@ -96,7 +106,7 @@ const Tables: React.FC<TableProps> = ({ data, hasNextPage, hasPreviousPage, fetc
               {table.getRowModel().rows.map((row, index) => (
                 <tr
                   key={row.id}
-                  className={`hover:bg-gray-50 bg-container-light`}
+                  className={`bg-container-light hover:bg-gray-50`}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td
@@ -118,19 +128,18 @@ const Tables: React.FC<TableProps> = ({ data, hasNextPage, hasPreviousPage, fetc
       <div className="mt-4 flex items-center justify-between px-4">
         <button
           className="rounded border px-4 py-2 disabled:opacity-50"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
+          onClick={() => fetchPreviousPage()}
+          disabled={!!!hasPreviousPage}
         >
           Previous
         </button>
         <span className="text-sm text-gray-700">
-          Page {table.getState().pagination.pageIndex + 1} of{" "}
-          {table.getPageCount()}
+          Page {currentPage} of {maxPage}
         </span>
         <button
           className="rounded border px-4 py-2 disabled:opacity-50"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
+          onClick={() => fetchNextPage()}
+          disabled={!!!hasNextPage}
         >
           Next
         </button>

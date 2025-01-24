@@ -6,6 +6,7 @@ import Login from "../pages/Login";
 import SignUp from "../pages/SignUp";
 import Analytics from "../pages/Analytics";
 import NotFound from "../pages/NotFound";
+import Settings from "../pages/Settings";
 const routes: RouteObject[] = [
   {
     path: "/",
@@ -15,12 +16,17 @@ const routes: RouteObject[] = [
         path: "/dashboard",
         element: <ProtectedRoute children={<Dashboard />} />,
         children: [],
-      },{
+      },
+      {
         path: "/analytics",
         element: <ProtectedRoute children={<Analytics />} />,
         children: [],
       },
-      
+      {
+        path: "/settings",
+        element: <ProtectedRoute children={<Settings />} />,
+        children: [],
+      },
     ],
   },
   {
@@ -35,7 +41,7 @@ const routes: RouteObject[] = [
   },
   {
     path: "*",
-    element: <NotFound  />,
-  }
+    element: <NotFound />,
+  },
 ];
 export const router = createHashRouter(routes);

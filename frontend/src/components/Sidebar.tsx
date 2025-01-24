@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 
 const Sidebar: React.FC<{
   shouldSidebarCollapse: boolean;
@@ -12,7 +12,7 @@ const Sidebar: React.FC<{
     { path: "/reports", icon: "bi-file-earmark-text", label: "Reports" },
   ];
   return (
-    <div className={`h-full bg-[#F3F4F6]`}>
+    <div className={`h-full bg-container-light`}>
       <div
         id="topper"
         className="flex h-[8%] flex-row items-center justify-center gap-4 px-3"
@@ -25,15 +25,19 @@ const Sidebar: React.FC<{
 
       <div className="flex h-[92%] flex-col space-y-1 p-2">
         {navItems.map((item) => (
-          <Link
+          <NavLink
             key={item.path}
             to={item.path}
-            className="flex items-center space-x-3 rounded-lg p-2 hover:bg-gray-200"
+            className={({ isActive }) =>
+              `flex items-center space-x-3 rounded-lg p-2 hover:bg-gray-200 ${
+                isActive ? "text-blue-700" : "text-gray-700"
+              }`
+            }
             onClick={() => setShouldSidebarCollapse(true)}
           >
-            <i className={`bi ${item.icon} text-xl`} />
+            <i className={`bi ml-2 ${item.icon} text-xl`} />
             <span>{item.label}</span>
-          </Link>
+          </NavLink>
         ))}
       </div>
     </div>

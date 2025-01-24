@@ -1,36 +1,47 @@
 import { useState } from "react";
+import { TQueryParams, TQueryType } from "../client/types";
 import Tables from "../components/Tables";
-import { IBySourceIPResponse, TQueryParams, TQueryType } from "../client/types";
 import { useAnalyticsQuery } from "../hooks/useAnalyticsQuery";
-import { date2Unix } from "../utils/timetools";
-import { Prev } from "react-bootstrap/esm/PageItem";
-import { IBySourceIP } from "../client/api/models/request";
+import Dropdown from "../components/Dropdown";
+
+const dropdownOptions: Array<Record<string, TQueryType>> = [
+  { TimeRange: "byTimeRange" },
+  { Protocol: "byProtocol" },
+  { SourceIP: "bySourceIP" },
+];
 
 const Analytics = () => {
-  const [queryType, setQueryType] = useState<"time" | "protocol" | "source-ip">(
-    "time",
-  );
+  const [queryType, setQueryType] = useState<TQueryType>("byTimeRange");
+  const handleDropdownSelect = (selected: string) => {
+    let target = dropdownOptions.find((option) => option[selected])![selected];
+    console.log("target", target);
+    setQueryType(target);
+  };
   const [queryParams, setQueryParams] = useState<TQueryParams>({
-    startTime: 86400,
-    endTime: Date.now() / 1e3,
+    startTime: Date.now() / 1e3 - 86400 - 300,
+    endTime: Date.now() / 1e3 - 86400,
     protocol: "",
     ipAddress: "",
     page: 1,
-    pageSize: 20,
+    pageSize: 50,
   });
 
-  const { data, error, isLoading, hasNextPage, hasPreviousPage } =
-    useAnalyticsQuery<IBySourceIP, IBySourceIPResponse>(
-      "bySourceIP",
-      {
-        ip_address: queryParams.ipAddress || "",
-        start: queryParams.startTime || 0,
-        end: queryParams.endTime || new Date().getTime() / 1e3,
-        page: queryParams.page || 1,
-        page_size: queryParams.pageSize || 20,
-      },
-      5000,
-    );
+  const {
+    data,
+    error,
+    isLoading,
+    maxPage,
+    currentPage,
+    hasNextPage,
+    hasPreviousPage,
+  } = useAnalyticsQuery(queryType, {
+    ip_address: queryParams.ipAddress || "",
+    protocol: queryParams.protocol || "",
+    start: queryParams.startTime || 0,
+    end: queryParams.endTime || new Date().getTime() / 1e3,
+    page: queryParams.page || 1,
+    page_size: queryParams.pageSize || 20,
+  });
 
   const handleQuery = (type: TQueryType, params: any) => {
     setQueryType(type);
@@ -41,9 +52,17 @@ const Analytics = () => {
   return (
     <div className="p-4">
       <div className="mb-4 flex gap-4">
+        <Dropdown
+          options={dropdownOptions.map(obj => Object.keys(obj)[0])}
+          label="Query By"
+          handleSelect={handleDropdownSelect}
+        />
         <button
           onClick={() =>
-            handleQuery("time", { startTime: 86400, endTime: Date.now() / 1e3 })
+            handleQuery("byTimeRange", {
+              startTime: Date.now() / 1e3 - 86400 - 7200,
+              endTime: Date.now() / 1e3 - 86400,
+            })
           }
           className="rounded bg-blue-500 px-4 py-2 text-white"
         >
@@ -51,7 +70,7 @@ const Analytics = () => {
         </button>
         <button
           onClick={() =>
-            handleQuery("protocol", {
+            handleQuery("byProtocol", {
               protocol: "HTTPS",
               startTime: 86400,
               endTime: Date.now() / 1e3,
@@ -63,8 +82,8 @@ const Analytics = () => {
         </button>
         <button
           onClick={() =>
-            handleQuery("source-ip", {
-              ipAddress: "192.168.1.1",
+            handleQuery("bySourceIP", {
+              ipAddress: "142.66.76.33",
               startTime: 86400,
               endTime: Date.now() / 1e3,
             })
@@ -80,10 +99,16 @@ const Analytics = () => {
       {data && (
         <Tables
           data={data}
+          currentPage={currentPage}
+          maxPage={maxPage}
           hasPreviousPage={hasPreviousPage}
           hasNextPage={hasNextPage}
-          // fetchNextPage={setQueryParams((prev) => ({ ...prev, page: prev.page + 1 }))}
-          // fetchPreviousPage={fetchPreviousPage}
+          fetchNextPage={() =>
+            setQueryParams((prev) => ({ ...prev, page: prev.page + 1 }))
+          }
+          fetchPreviousPage={() =>
+            setQueryParams((prev) => ({ ...prev, page: prev.page - 1 }))
+          }
         />
       )}
     </div>

@@ -161,64 +161,76 @@ class CrudService:
         self, start_time: float, end_time: float, page: int, page_size: int
     ) -> PaginatedResponse[TopSourceIP]:
         """Get top source IPs by packet count"""
-        raw_data = self.db_ops.get_top_source_ips(start_time, end_time, page, page_size)
-        meta_data = raw_data["metadata"]
-        data = raw_data["data"]
-        total_docs = meta_data[0]["total_documents"]
-        total_packets = sum(doc["total_packets"] for doc in data)
-        total_bytes = sum(doc["total_bytes"] for doc in data)
-
-        top_ips = [
-            TopSourceIP(
-                ip=doc["source_ip"],
-                total_packets=doc["total_packets"],
-                total_bytes=doc["total_bytes"],
-                percentage_packets=doc["total_packets"] / total_packets * 100,
-                percentage_bytes=doc["total_bytes"] / total_bytes * 100,
-                src_region=(doc["src_region"] if "src_region" in doc else "Unknown"),
+        try:
+            raw_data = self.db_ops.get_top_source_ips(
+                start_time, end_time, page, page_size
             )
-            for doc in data
-        ]
-        return PaginatedResponse(
-            total=total_docs,
-            page=page,
-            page_size=page_size,
-            data=top_ips,
-        )
+            meta_data = raw_data["metadata"]
+            data = raw_data["data"]
+            total_docs = meta_data[0]["total_documents"]
+            total_packets = sum(doc["total_packets"] for doc in data)
+            total_bytes = sum(doc["total_bytes"] for doc in data)
+
+            top_ips = [
+                TopSourceIP(
+                    ip=doc["source_ip"],
+                    total_packets=doc["total_packets"],
+                    total_bytes=doc["total_bytes"],
+                    percentage_packets=doc["total_packets"] / total_packets * 100,
+                    percentage_bytes=doc["total_bytes"] / total_bytes * 100,
+                    src_region=(
+                        doc["src_region"] if "src_region" in doc else "Unknown"
+                    ),
+                )
+                for doc in data
+            ]
+            return PaginatedResponse(
+                total=total_docs,
+                page=page,
+                page_size=page_size,
+                data=top_ips,
+            )
+        except Exception as e:
+            self.logger.error(f"Error getting top source IPs: {e}")
+            return PaginatedResponse(total=0, page=page, page_size=page_size, data=[])
 
     def get_protocol_distribution(
         self, start_time: float, end_time: float, page: int = 1, page_size: int = 50
     ) -> PaginatedResponse[ProtocolDistribution]:
         """Get protocol distribution for a given time range"""
-        raw_data = self.db_ops.get_protocol_distribution(
-            start_time, end_time, page, page_size
-        )
-        meta_data = raw_data["metadata"]
-        data = raw_data["data"]
-
-        total_packets = sum(doc["total_packets"] for doc in data)
-        total_bytes = sum(doc["total_bytes"] for doc in data)
-        total_docs = meta_data[0]["total_documents"]
-        distribution_items = [
-            ProtocolDistributionItem(
-                protocol=doc["protocol"],
-                percentage_count=doc["total_packets"] / total_packets * 100,
-                percentage_bytes=doc["total_bytes"] / total_bytes * 100,
-                packet_count=doc["total_packets"],
-                total_bytes=doc["total_bytes"],
+        try:
+            raw_data = self.db_ops.get_protocol_distribution(
+                start_time, end_time, page, page_size
             )
-            for doc in data
-        ]
-        distribution = ProtocolDistribution(
-            distribution=distribution_items,
-            time_range=TimeRange(start=start_time, end=end_time),
-        )
-        return PaginatedResponse(
-            total=total_docs,
-            page=page,
-            page_size=page_size,
-            data=distribution,
-        )
+            meta_data = raw_data["metadata"]
+            data = raw_data["data"]
+
+            total_packets = sum(doc["total_packets"] for doc in data)
+            total_bytes = sum(doc["total_bytes"] for doc in data)
+            total_docs = meta_data[0]["total_documents"]
+            distribution_items = [
+                ProtocolDistributionItem(
+                    protocol=doc["protocol"],
+                    percentage_count=doc["total_packets"] / total_packets * 100,
+                    percentage_bytes=doc["total_bytes"] / total_bytes * 100,
+                    packet_count=doc["total_packets"],
+                    total_bytes=doc["total_bytes"],
+                )
+                for doc in data
+            ]
+            distribution = ProtocolDistribution(
+                distribution=distribution_items,
+                time_range=TimeRange(start=start_time, end=end_time),
+            )
+            return PaginatedResponse(
+                total=total_docs,
+                page=page,
+                page_size=page_size,
+                data=distribution,
+            )
+        except Exception as e:
+            self.logger.error(f"Error getting protocol distribution: {e}")
+            return PaginatedResponse(total=0, page=page, page_size=page_size, data=[])
 
     def get_traffic_summary(
         self, start_time: float, end_time: float, page: int = 1, page_size: int = 50
@@ -253,26 +265,31 @@ class CrudService:
         page_size: int = 50,
     ) -> PaginatedResponse[TimeSeriesData]:
         """Get time series data for a given time range and interval"""
-        raw_data = self.db_ops.get_time_series_data(
-            start_time, end_time, interval, page, page_size
-        )
-        meta_data = raw_data["metadata"]
-        data = raw_data["data"]
-        total_docs = meta_data[0]["total_documents"]
-        time_series = [
-            TimeSeriesData(
-                time_range=TimeRange(start=doc["start_time"], end=doc["end_time"]),
-                total_packets=doc["total_packets"],
-                total_bytes=doc["total_bytes"],
+        try:
+
+            raw_data = self.db_ops.get_time_series_data(
+                start_time, end_time, interval, page, page_size
             )
-            for doc in data
-        ]
-        return PaginatedResponse(
-            total=total_docs,
-            page=page,
-            page_size=page_size,
-            data=time_series,
-        )
+            meta_data = raw_data["metadata"]
+            data = raw_data["data"]
+            total_docs = meta_data[0]["total_documents"]
+            time_series = [
+                TimeSeriesData(
+                    time_range=TimeRange(start=doc["start_time"], end=doc["end_time"]),
+                    total_packets=doc["total_packets"],
+                    total_bytes=doc["total_bytes"],
+                )
+                for doc in data
+            ]
+            return PaginatedResponse(
+                total=total_docs,
+                page=page,
+                page_size=page_size,
+                data=time_series,
+            )
+        except Exception as e:
+            self.logger.error(f"Error getting time series data: {e}")
+            return PaginatedResponse(total=0, page=page, page_size=page_size, data=[])
 
     def delete_packets_before(self, timestamp: float) -> int:
         """Delete all packets before a specific timestamp"""

@@ -2,18 +2,9 @@ import { useInfiniteQuery, useQuery } from "react-query";
 import { QueryService } from "../client/services/query";
 import { useState } from "react";
 import { IPaginatedResponse } from "../client/api/models/response";
+import { TQueryType } from "../client/types";
+import useToast from "./useToast";
 
-type TQueryType =
-  | "bySourceIP"
-  | "byProtocol"
-  | "byTimeRange"
-  | "byDestinationPort"
-  | "bySourceRegion"
-  | "protocolDistribution"
-  | "trafficSummary"
-  | "timeSeries"
-  | "protocolAnalysis"
-  | "topSourceIPs";
 
 const mapping: Record<
   TQueryType,
@@ -36,30 +27,40 @@ export const useAnalyticsQuery = <TRequest = any, TResponse = any>(
   queryParams: TRequest,
   refetchInterval: number | false = false,
 ) => {
-  const [hasPreviousPage, setHasPreviousPage] = useState(false);
-  const [hasNextPage, setHasNextPage] = useState(false);
+  const [maxPage, setMaxPage] = useState<number>(0);
+  const [currentPage, setCurrentPage] = useState<number>(0);
+  const [hasNextPage, setHasNextPage] = useState<boolean>(false);
+  const [hasPreviousPage, setHasPreviousPage] = useState<boolean>(false);
   // data will be paginated response regardlessly
   const [data, setData] = useState<TResponse | IPaginatedResponse<any>>();
   const [error, setError] = useState<any>();
+  const toast = useToast();
   const { isLoading } = useQuery({
     queryKey: ["analytics", queryType, queryParams],
     queryFn: async () => await mapping[queryType](queryParams),
     refetchInterval: refetchInterval || false, // dafault is false
     onError: (err) => {
+      toast.error(err);
       setError(err);
     },
     onSuccess: (res) => {
-      setData(res);
-      setHasNextPage(res.page * res.page_size < res.total);
-      setHasPreviousPage(res.page > 1);
-      res;
+      console.log("1243125r34t3453547238902", res.data.data);
+      toast.success("Query Success");
+      setData(res.data.data);
+      setCurrentPage(res.data.page);
+      setMaxPage(Math.ceil(res.data.total / res.data.page_size));
+      setHasNextPage(res.data.page < maxPage);
+      setHasPreviousPage(res.data.page > 1);
+      console.log("maxPage", maxPage);
     },
   });
   return {
     data,
+    currentPage,
     error,
     isLoading,
-    hasPreviousPage,
     hasNextPage,
+    hasPreviousPage,
+    maxPage,
   };
 };

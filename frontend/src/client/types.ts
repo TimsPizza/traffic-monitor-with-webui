@@ -108,7 +108,17 @@ export enum EMediaBreakpoints {
   xxl = 1536,
 }
 
-export type TQueryType = 'time' | 'protocol' | 'source-ip'
+export type TQueryType =
+  | "bySourceIP"
+  | "byProtocol"
+  | "byTimeRange"
+  | "byDestinationPort"
+  | "bySourceRegion"
+  | "protocolDistribution"
+  | "trafficSummary"
+  | "timeSeries"
+  | "protocolAnalysis"
+  | "topSourceIPs";
 
 export type TQueryParams = {
   startTime?: number
@@ -125,9 +135,4 @@ export interface IPageInfo {
   total: number;
   hasNextPage: boolean;
   hasPreviousPage: boolean;
-}
-
-export interface IBySourceIPResponse extends IPageInfo {
-  sourceIP: string;
-  data: IFullAccessRecordResponse[];
 }

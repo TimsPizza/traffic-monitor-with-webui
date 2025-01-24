@@ -95,6 +95,7 @@ export class DataApi {
     return apiClient.instance.get(`${DataApi.BASE_URL}/time-series`, {
       params: config,
     });
+    
   }
 
   public static async getTrafficSummary(
