@@ -28,7 +28,6 @@ class QueryExecutor:
     def execute_pipeline(self, pipeline: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Execute a MongoDB aggregation pipeline"""
         try:
-            print(pipeline)
             res = list(self.collection.aggregate(pipeline))
             if len(res) == 0:
                 return []

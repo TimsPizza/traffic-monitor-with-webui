@@ -7,6 +7,7 @@ import {
   getPaginationRowModel,
 } from "@tanstack/react-table";
 import { useEffect } from "react";
+import { Cell } from "@tanstack/react-table";
 import { IFullAccessRecordResponse } from "../client/api/models/response";
 
 const columnHelper = createColumnHelper<IFullAccessRecordResponse>();
@@ -56,6 +57,7 @@ interface TableProps {
   hasNextPage: boolean;
   fetchNextPage: () => void;
   fetchPreviousPage: () => void;
+  onFilterAdd: (filter: { key: string; value: string }) => void;
 }
 
 const Tables: React.FC<TableProps> = ({
@@ -66,10 +68,30 @@ const Tables: React.FC<TableProps> = ({
   hasPreviousPage,
   fetchNextPage,
   fetchPreviousPage,
+  onFilterAdd,
 }) => {
   useEffect(() => {
     console.log("table", data);
   }, [data]);
+
+  const handleCellClick = (cell: Cell<IFullAccessRecordResponse, unknown>) => {
+    if (!onFilterAdd) return;
+    
+    const columnToFilterMap: Record<string, string> = {
+      'src_ip': 'ip',
+      'region': 'region',
+      'protocol': 'protocol',
+      'dst_port': 'port'
+    };
+
+    const filterKey = columnToFilterMap[cell.column.id];
+    if (filterKey) {
+      onFilterAdd({
+        key: filterKey,
+        value: cell.getValue() as string
+      });
+    }
+  };
 
   const table = useReactTable({
     data,
@@ -84,13 +106,13 @@ const Tables: React.FC<TableProps> = ({
       <div className="overflow-x-auto rounded-lg">
         <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
           <table className="w-full divide-y divide-gray-200">
-            <thead className="sticky top-0 border-l border-r border-t bg-container-light">
+            <thead className="sticky top-0 border-l border-r border-t bg-container-light rounded-">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
-                      className="cursor-pointer bg-bg-light px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                      className="cursor-pointer bg-container-light px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
                       onClick={header.column.getToggleSortingHandler()}
                     >
                       {flexRender(
@@ -111,7 +133,12 @@ const Tables: React.FC<TableProps> = ({
                   {row.getVisibleCells().map((cell) => (
                     <td
                       key={cell.id}
-                      className="whitespace-nowrap px-4 py-2 text-sm text-gray-500"
+                      className={`whitespace-nowrap px-4 py-2 text-sm ${
+                        ['src_ip', 'region', 'protocol', 'dst_port'].includes(cell.column.id)
+                          ? 'text-blue-600 hover:text-blue-800 cursor-pointer'
+                          : 'text-gray-500'
+                      }`}
+                      onClick={() => handleCellClick(cell)}
                     >
                       {flexRender(
                         cell.column.columnDef.cell,

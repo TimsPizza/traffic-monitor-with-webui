@@ -1,10 +1,9 @@
 import { useInfiniteQuery, useQuery } from "react-query";
 import { QueryService } from "../client/services/query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { IPaginatedResponse } from "../client/api/models/response";
 import { TQueryType } from "../client/types";
 import useToast from "./useToast";
-
 
 const mapping: Record<
   TQueryType,
@@ -31,9 +30,13 @@ export const useAnalyticsQuery = <TRequest = any, TResponse = any>(
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [hasNextPage, setHasNextPage] = useState<boolean>(false);
   const [hasPreviousPage, setHasPreviousPage] = useState<boolean>(false);
-  // data will be paginated response regardlessly
+  // data will be <PaginatedResponse> regardlessly
   const [data, setData] = useState<TResponse | IPaginatedResponse<any>>();
   const [error, setError] = useState<any>();
+  useEffect(() => {
+    console.log("useAnalyticsQuery: queryType", queryType);
+    console.log("useAnalyticsQuery: queryParams", queryParams);
+  }, [queryParams, queryType]);
   const toast = useToast();
   const { isLoading } = useQuery({
     queryKey: ["analytics", queryType, queryParams],
@@ -44,7 +47,7 @@ export const useAnalyticsQuery = <TRequest = any, TResponse = any>(
       setError(err);
     },
     onSuccess: (res) => {
-      console.log("1243125r34t3453547238902", res.data.data);
+      console.log("useAnalyticsQuery: success ", res.data.data);
       toast.success("Query Success");
       setData(res.data.data);
       setCurrentPage(res.data.page);

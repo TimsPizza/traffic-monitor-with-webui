@@ -27,14 +27,22 @@ import {
 } from "../api/models/request";
 import { apiClient } from "./apiClient";
 
+const washQueryParams = (query: Object) => {
+  return Object.entries(query).reduce((acc, [key, value]) => {
+    if (value === "") return acc;
+    return { ...acc, [key]: value };
+  }, {});
+}
+
 export class AuthApi {
   private static BASE_URL = "/auth";
   public static login(data: TLoginForm): Promise<TAuthResponse> {
-    return apiClient.instance.post(`${AuthApi.BASE_URL}/login`, data);
+    return apiClient.instance.post(`${AuthApi.BASE_URL}/login`,       washQueryParams(data),
+  );
   }
 
   public static signup(data: TSignUpForm): Promise<TAuthResponse> {
-    return apiClient.instance.post(`${AuthApi.BASE_URL}/signup`, data);
+    return apiClient.instance.post(`${AuthApi.BASE_URL}/signup`, washQueryParams(data));
   }
 
   public static logout(): Promise<void> {
@@ -53,7 +61,7 @@ export class DataApi {
     config: IBySourceIP,
   ): Promise<IBySourceIPResponse> {
     return apiClient.instance.get(`${DataApi.BASE_URL}/source-ip`, {
-      params: config,
+      params: washQueryParams(config),
     });
   }
 
@@ -61,7 +69,7 @@ export class DataApi {
     config: IByProtocol,
   ): Promise<IByProtocolResponse> {
     return apiClient.instance.get(`${DataApi.BASE_URL}/protocol`, {
-      params: config,
+      params: washQueryParams(config),
     });
   }
 
@@ -69,7 +77,7 @@ export class DataApi {
     config: IByTimeRange,
   ): Promise<IByTimeRangeResponse> {
     return apiClient.instance.get(`${DataApi.BASE_URL}/time`, {
-      params: config,
+      params: washQueryParams(config),
     });
   }
 
@@ -77,7 +85,7 @@ export class DataApi {
     config: IByDestinationPort,
   ): Promise<IByDestinationPortResponse> {
     return apiClient.instance.get(`${DataApi.BASE_URL}/port`, {
-      params: config,
+      params: washQueryParams(config),
     });
   }
 
@@ -85,7 +93,7 @@ export class DataApi {
     config: IBySourceRegion,
   ): Promise<IBySourceRegionResponse> {
     return apiClient.instance.get(`${DataApi.BASE_URL}/region`, {
-      params: config,
+      params: washQueryParams(config),
     });
   }
 
@@ -93,7 +101,7 @@ export class DataApi {
     config: ITimeSeries,
   ): Promise<ITimeSeriesResponse> {
     return apiClient.instance.get(`${DataApi.BASE_URL}/time-series`, {
-      params: config,
+      params: washQueryParams(config),
     });
     
   }
@@ -102,7 +110,7 @@ export class DataApi {
     config: ITrafficSummary,
   ): Promise<ITrafficSummaryResponse> {
     return apiClient.instance.get(`${DataApi.BASE_URL}/traffic-summary`, {
-      params: config,
+      params: washQueryParams(config),
     });
   }
 
@@ -110,7 +118,7 @@ export class DataApi {
     config: IProtocolDistribution,
   ): Promise<IProtocolDistributionResponse> {
     return apiClient.instance.get(`${DataApi.BASE_URL}/protocol-distribution`, {
-      params: config,
+      params: washQueryParams(config),
     });
   }
 
@@ -118,7 +126,7 @@ export class DataApi {
     config: IProtocolAnalysis,
   ): Promise<IProtocolAnalysisResponse> {
     return apiClient.instance.get(`${DataApi.BASE_URL}/protocol-analysis`, {
-      params: config,
+      params: washQueryParams(config),
     });
   }
 
@@ -126,7 +134,7 @@ export class DataApi {
     config: IByTopSourceIps,
   ): Promise<IByTopSourceIpsResponse> {
     return apiClient.instance.get(`${DataApi.BASE_URL}/top-source-ips`, {
-      params: config,
+      params: washQueryParams(config),
     });
   }
 }

@@ -107,6 +107,7 @@ export const unix2Date = (
   }).format(date);
 };
 
+ 
 export const date2Unix = (date: string) => {
   if (!isValidDateStr(date)) {
     throw new Error("Invalid date string");
