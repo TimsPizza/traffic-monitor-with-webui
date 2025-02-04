@@ -2,7 +2,7 @@ import { createContext, useEffect, useState } from "react";
 import { RouterProvider } from "react-router-dom";
 import { router } from "./routes";
 import { EMediaBreakpoints } from "./client/types";
-import { ToastContainer } from "react-bootstrap";
+import { ToastContainer } from "react-toastify";
 import { QueryClient, QueryClientProvider } from "react-query";
 
 interface IWindowSizeContext {
@@ -55,7 +55,7 @@ const App = () => {
     >
       <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />
-        <ToastContainer position="top-center" />
+        <ToastContainer />
       </QueryClientProvider>
     </WindowSizeContext.Provider>
   );

@@ -6,7 +6,7 @@ import {
   TRadialBarData,
   TSmoothLineData,
 } from "./client/types";
-import { unix2Date } from "./utils/timetools";
+import { unix2DateString } from "./utils/timetools";
 
 export const polylineData: TPolyLineData[] = [
   { timestamp: 1698768000, value: 100, name: "Point 1" },
@@ -67,7 +67,7 @@ const generateAccessRecord = (id: number): IAccessRecord => ({
   region: generateRandomIPRegion(),
   dst_port: generateRandomPort(),
   protocol: generateRandomProtocol(),
-  timestamp: unix2Date(
+  timestamp: unix2DateString(
     Date.now() - Math.random() * 86400000,
     DATE_FORMATTERS.HH_mm_ss,
   ),

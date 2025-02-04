@@ -1,13 +1,17 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { TQueryParams, TQueryType } from "../client/types";
 import Tables from "../components/Tables";
 import FilterChip from "../components/FilterChip";
 import { useAnalyticsQuery } from "../hooks/useAnalyticsQuery";
 import Dropdown from "../components/Dropdown";
 import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-import { date2Unix, unix2Date } from "../utils/timetools";
-
+import {
+  date2Unix,
+  dateString2Unix,
+  unix2Date,
+  unix2DateString,
+} from "../utils/timetools";
+import useToast from "../hooks/useToast";
 const dropdownOptions: Array<Record<string, TQueryType>> = [
   { TimeRange: "byTimeRange" },
   { Protocol: "byProtocol" },
@@ -20,15 +24,17 @@ interface IFilter {
 }
 
 const Analytics = () => {
+  const toast = useToast();
   const [queryType, setQueryType] = useState<TQueryType>("byTimeRange");
   const [filters, setFilters] = useState<IFilter[]>([]);
-  const [startTime, setStartTime] = useState<number>(
+  const [startTime, setStartTime_] = useState<number>(
     new Date().getTime() / 1e3,
   );
-  const [endTime, setEndTime] = useState<number>(
+  const [endTime, setEndTime_] = useState<number>(
+    // set end time to 24 hours ago as init value
     new Date().getTime() / 1e3 - 86400,
   );
-  const [queryParams, setQueryParams] = useState<TQueryParams>({
+  const queryParams = useRef<TQueryParams>({
     startTime: startTime,
     endTime: endTime,
     protocol: "",
@@ -37,15 +43,44 @@ const Analytics = () => {
     pageSize: 50,
   });
 
+  const {
+    data,
+    error,
+    isLoading,
+    maxPage,
+    currentPage,
+    hasNextPage,
+    hasPreviousPage,
+  } = useAnalyticsQuery(queryType, {
+    ip_address: queryParams.current.ipAddress || "",
+    protocol: queryParams.current.protocol || "",
+    start: queryParams.current.startTime || 0,
+    end: queryParams.current.endTime || new Date().getTime() / 1e3,
+    page: queryParams.current.page || 1,
+    page_size: queryParams.current.pageSize || 20,
+    // disable refetch by default
+    refetchInterval: false,
+  });
+  const setStartTime = (date: number) => {
+    if (date >= endTime) {
+      toast.error("Start time should be earlier than end time!", {
+        position: "top-center",
+      });
+    }
+    setStartTime_(date);
+  };
+  const setEndTime = (date: number) => {
+    if (date <= startTime) {
+      toast.error("End time should be later than start time!", {
+        position: "top-center",
+      });
+    }
+    setEndTime_(date);
+  };
   const handleAddFilter = useCallback(
     (filter: IFilter) => {
       setFilters((prev) => [...prev, filter]);
-      setQueryParams((prev) => ({
-        ...prev,
-        [filter.key]: filter.value,
-        startTime: Math.floor(startTime.getTime() / 1000),
-        endTime: Math.floor(endTime.getTime() / 1000),
-      }));
+      queryParams.current = Object.assign({}, queryParams.current, filter);
     },
     [startTime, endTime],
   );
@@ -57,40 +92,22 @@ const Analytics = () => {
       return newFilters;
     });
   }, []);
+
   const handleQueryTypeSelect = (selected: string) => {
     let target = dropdownOptions.find((option) => option[selected])![selected];
     console.log("target", target);
     setQueryType(target);
   };
+
   const handleQueryPageSizeSelect = (selected: string) => {
     let pageSizeNumber = parseInt(selected);
-    setQueryParams((prev) => {
-      return Object.assign({}, prev, { pageSize: pageSizeNumber });
+    queryParams.current = Object.assign({}, queryParams.current, {
+      pageSize: pageSizeNumber,
     });
   };
 
-  const {
-    data,
-    error,
-    isLoading,
-    maxPage,
-    currentPage,
-    hasNextPage,
-    hasPreviousPage,
-  } = useAnalyticsQuery(queryType, {
-    ip_address: queryParams.ipAddress || "",
-    protocol: queryParams.protocol || "",
-    start: queryParams.startTime || 0,
-    end: queryParams.endTime || new Date().getTime() / 1e3,
-    page: queryParams.page || 1,
-    page_size: queryParams.pageSize || 20,
-    // disable refetch by default
-    refetchInterval: false,
-  });
-
   const handleQuery = (type: TQueryType, params: any) => {
     setQueryType(type);
-    setQueryParams(() => Object.assign({}, params));
     console.log("setQueryParams", queryParams);
   };
 
@@ -113,6 +130,7 @@ const Analytics = () => {
           <Dropdown
             options={dropdownOptions.map((obj) => Object.keys(obj)[0])}
             label="Query By"
+            minW="128px"
             handleSelect={handleQueryTypeSelect}
           />
           {/* Time Range Picker */}
@@ -127,7 +145,9 @@ const Analytics = () => {
               <span>From:</span>
               <DatePicker
                 selected={unix2Date(startTime)}
-                onChange={(date: Date) => setStartTime(date2Unix(date))}
+                onChange={(date: Date | null) =>
+                  date && setStartTime(date2Unix(date))
+                }
                 showTimeSelect
                 timeFormat="HH:mm"
                 timeIntervals={15}
@@ -142,7 +162,9 @@ const Analytics = () => {
               <span>To:</span>
               <DatePicker
                 selected={unix2Date(endTime)}
-                onChange={(date: Date) => setEndTime(date)}
+                onChange={(date: Date | null) =>
+                  date && setEndTime(date2Unix(date))
+                }
                 showTimeSelect
                 timeFormat="HH:mm"
                 timeIntervals={15}

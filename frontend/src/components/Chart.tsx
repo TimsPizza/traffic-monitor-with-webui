@@ -22,7 +22,7 @@ import {
   TPieData,
   DATE_FORMATTERS,
 } from "../client/types";
-import { unix2Date } from "../utils/timetools";
+import { unix2DateString } from "../utils/timetools";
 
 interface ChartProps {
   chartType: EChartType;
@@ -80,7 +80,7 @@ const Chart: React.FC<ChartProps> = ({
             <XAxis
               dataKey="timestamp"
               tickFormatter={(timestamp) =>
-                unix2Date(timestamp, DATE_FORMATTERS.HH_mm)
+                unix2DateString(timestamp, DATE_FORMATTERS.HH_mm)
               }
               stroke={borderColor}
             />
@@ -113,7 +113,7 @@ const Chart: React.FC<ChartProps> = ({
             <XAxis
               dataKey="timestamp"
               tickFormatter={(timestamp) =>
-                unix2Date(timestamp, DATE_FORMATTERS.HH_mm)
+                unix2DateString(timestamp, DATE_FORMATTERS.HH_mm)
               }
               stroke={borderColor}
             />

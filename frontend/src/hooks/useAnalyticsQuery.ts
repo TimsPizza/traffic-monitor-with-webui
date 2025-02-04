@@ -37,7 +37,9 @@ export const useAnalyticsQuery = <TRequest = any, TResponse = any>(
     console.log("useAnalyticsQuery: queryType", queryType);
     console.log("useAnalyticsQuery: queryParams", queryParams);
   }, [queryParams, queryType]);
-  const toast = useToast();
+  const toast = useToast({
+    position: "top-right",
+  });
   const { isLoading } = useQuery({
     queryKey: ["analytics", queryType, queryParams],
     queryFn: async () => await mapping[queryType](queryParams),

@@ -93,7 +93,7 @@ export const GMT_TO_IANA: Record<TTimezone, TIanaTimezone> = {
 };
 
 // convert unix timestamp to date string with timezone support
-export const unix2Date = (
+export const unix2DateString = (
   unix: number,
   formatter: Intl.DateTimeFormatOptions = FULL_DATE_FORMAT_OPTIONS,
   timezone: TTimezone = "GMT+8",
@@ -107,13 +107,22 @@ export const unix2Date = (
   }).format(date);
 };
 
+export const unix2Date = (unix: number, timezone: TTimezone = "GMT+8") => {
+  const ianaTimeZone = GMT_TO_IANA[timezone];
+  return new Date(unix * 1000);
+}
+
  
-export const date2Unix = (date: string) => {
+export const dateString2Unix = (date: string) => {
   if (!isValidDateStr(date)) {
     throw new Error("Invalid date string");
   }
   return new Date(date).getTime() / 1000;
 };
+
+export const date2Unix = (date: Date) => {
+  return date.getTime() / 1000;
+}
 
 export const isValidDateStr = (dateStr: string) => {
   const reg = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/; // YYYY-MM-DD HH:MM:SS
