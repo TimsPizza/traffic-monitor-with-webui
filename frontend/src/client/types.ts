@@ -121,12 +121,14 @@ export type TQueryType =
   | "topSourceIPs";
 
 export type TQueryParams = {
-  startTime?: number
-  endTime?: number
+  start?: number
+  end?: number
   protocol?: string
-  ipAddress?: string
+  ip_address?: string
   page?: number
-  pageSize?: number
+  page_size?: number
+  port?: number
+  region?: string
 }
 
 export interface IPageInfo {

@@ -3,17 +3,18 @@ import React, { useEffect } from "react";
 interface IDropdownProps {
   label: string;
   options: string[];
+  selected: string
   handleSelect: (selected: string) => void;
   minW?: string;
 }
 
 const Dropdown: React.FC<IDropdownProps> = ({
-  label = "dropdown",
+  label,
   options = [],
+  selected = "",
   handleSelect,
   minW,
 }) => {
-  const [selected, setSelected] = React.useState<string>(label);
   const [componentUniqueID, _] = React.useState<string>(
     Math.random().toString(36).substring(7),
   );
@@ -44,7 +45,7 @@ const Dropdown: React.FC<IDropdownProps> = ({
         className={`relative flex w-full cursor-pointer items-center justify-center rounded-md bg-blue-500 px-2 transition-all hover:bg-blue-400 active:bg-blue-600 ${expanded ? "rounded-b-none" : ""}`}
         onClick={() => setExpanded(!expanded)}
       >
-        <span className="text-white">{selected}</span>
+        <span className="text-white">{selected ?? label}</span>
         <i
           className={`bi bi-chevron-down ml-2 text-white transition-transform duration-200 ${expanded ? "-rotate-180" : ""} `}
         />
@@ -61,7 +62,6 @@ const Dropdown: React.FC<IDropdownProps> = ({
               index === options.length - 1 ? "rounded-b-md" : ""
             }`}
             onClick={() => {
-              setSelected(option);
               setExpanded(false);
               handleSelect(option);
             }}

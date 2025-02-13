@@ -55,6 +55,7 @@ interface TableProps {
   maxPage: number;
   hasPreviousPage: boolean;
   hasNextPage: boolean;
+  pageSize: number;
   fetchNextPage: () => void;
   fetchPreviousPage: () => void;
   onFilterAdd: (filter: { key: string; value: string }) => void;
@@ -64,6 +65,7 @@ const Tables: React.FC<TableProps> = ({
   data,
   currentPage,
   maxPage,
+  pageSize = 20,
   hasNextPage,
   hasPreviousPage,
   fetchNextPage,
@@ -99,6 +101,11 @@ const Tables: React.FC<TableProps> = ({
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    initialState: {
+      pagination: {
+        pageSize: pageSize,
+      }
+    }
   });
 
   return (

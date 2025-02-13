@@ -1,89 +1,76 @@
-import { useState, useCallback, useRef } from "react";
-import { TQueryParams, TQueryType } from "../client/types";
-import Tables from "../components/Tables";
-import FilterChip from "../components/FilterChip";
-import { useAnalyticsQuery } from "../hooks/useAnalyticsQuery";
-import Dropdown from "../components/Dropdown";
+import { useCallback, useState } from "react";
 import DatePicker from "react-datepicker";
-import {
-  date2Unix,
-  dateString2Unix,
-  unix2Date,
-  unix2DateString,
-} from "../utils/timetools";
+import { TQueryParams, TQueryType } from "../client/types";
+import Dropdown from "../components/Dropdown";
+import FilterChip from "../components/FilterChip";
+import Tables from "../components/Tables";
+import { useAnalyticsQuery } from "../hooks/useAnalyticsQuery";
 import useToast from "../hooks/useToast";
-const dropdownOptions: Array<Record<string, TQueryType>> = [
-  { TimeRange: "byTimeRange" },
-  { Protocol: "byProtocol" },
-  { SourceIP: "bySourceIP" },
-];
+import { date2Unix, unix2Date } from "../utils/timetools";
+import { findArrItemByKey } from "../utils/tools";
+
+interface IDropDownOption {
+  // key: display text, value: query type
+  key: string;
+  value: TQueryType;
+}
 
 interface IFilter {
   key: string;
   value: string;
 }
 
+const dropdownOptions: Array<IDropDownOption> = [
+  {key: "TimeRange", value: "byTimeRange"},
+  {key: "Protocol", value: "byProtocol"}, 
+  {key: "SourceIP", value: "bySourceIP"},
+];
+
 const Analytics = () => {
-  const toast = useToast();
+  const toast = useToast({
+    position: "top-right",
+  });
   const [queryType, setQueryType] = useState<TQueryType>("byTimeRange");
   const [filters, setFilters] = useState<IFilter[]>([]);
-  const [startTime, setStartTime_] = useState<number>(
-    new Date().getTime() / 1e3,
-  );
-  const [endTime, setEndTime_] = useState<number>(
-    // set end time to 24 hours ago as init value
-    new Date().getTime() / 1e3 - 86400,
-  );
-  const queryParams = useRef<TQueryParams>({
-    startTime: startTime,
-    endTime: endTime,
+  const [queryParams, setQueryParams_] = useState<TQueryParams>({
+    start: Date.now() / 1e3 - 86400,
+    end: Date.now() / 1e3,
     protocol: "",
-    ipAddress: "",
+    ip_address: "",
     page: 1,
-    pageSize: 50,
+    page_size: 50,
+    port: -1,
+    region: "",
   });
+
+  const setQueryParams = (key: string, value: any) => {
+    if (!(key in queryParams)) {
+      return;
+    }
+    setQueryParams_((prev) => {
+      return Object.assign({}, prev, { [key]: value });
+    });
+  };
 
   const {
     data,
     error,
     isLoading,
-    maxPage,
-    currentPage,
+    refetch,
     hasNextPage,
     hasPreviousPage,
-  } = useAnalyticsQuery(queryType, {
-    ip_address: queryParams.current.ipAddress || "",
-    protocol: queryParams.current.protocol || "",
-    start: queryParams.current.startTime || 0,
-    end: queryParams.current.endTime || new Date().getTime() / 1e3,
-    page: queryParams.current.page || 1,
-    page_size: queryParams.current.pageSize || 20,
-    // disable refetch by default
-    refetchInterval: false,
+    currentPage,
+    totalItems,
+    totalPages,
+  } = useAnalyticsQuery({
+    queryType: queryType,
+    params: queryParams,
   });
-  const setStartTime = (date: number) => {
-    if (date >= endTime) {
-      toast.error("Start time should be earlier than end time!", {
-        position: "top-center",
-      });
-    }
-    setStartTime_(date);
-  };
-  const setEndTime = (date: number) => {
-    if (date <= startTime) {
-      toast.error("End time should be later than start time!", {
-        position: "top-center",
-      });
-    }
-    setEndTime_(date);
-  };
-  const handleAddFilter = useCallback(
-    (filter: IFilter) => {
-      setFilters((prev) => [...prev, filter]);
-      queryParams.current = Object.assign({}, queryParams.current, filter);
-    },
-    [startTime, endTime],
-  );
+
+  const handleAddFilter = useCallback((filter: IFilter) => {
+    setFilters((prev) => [...prev, filter]);
+    setQueryParams(filter.key, filter.value);
+  }, []);
 
   const handleRemoveFilter = useCallback((index: number) => {
     setFilters((prev) => {
@@ -94,20 +81,41 @@ const Analytics = () => {
   }, []);
 
   const handleQueryTypeSelect = (selected: string) => {
-    let target = dropdownOptions.find((option) => option[selected])![selected];
-    console.log("target", target);
+    // 'selected' is the value of the selected dropdown option
+    let target = dropdownOptions.find((item) => item.key === selected)?.value ?? "byTimeRange";
+    console.log("selected", selected, "target", target);
     setQueryType(target);
   };
 
   const handleQueryPageSizeSelect = (selected: string) => {
     let pageSizeNumber = parseInt(selected);
-    queryParams.current = Object.assign({}, queryParams.current, {
-      pageSize: pageSizeNumber,
-    });
+    setQueryParams("page_size", pageSizeNumber.toString());
   };
 
-  const handleQuery = (type: TQueryType, params: any) => {
-    setQueryType(type);
+  const handleStartTimeSelect = (date: Date | null) => {
+    if (date && queryParams.end) {
+      if (date2Unix(date) >= queryParams.end) {
+        toast.error("Start time must be before end time");
+        return;
+      } else {
+        setQueryParams("start", date2Unix(date));
+      }
+    }
+  };
+
+  const handleEndTimeSelect = (date: Date | null) => {
+    if (date && queryParams.start) {
+      if (date2Unix(date) <= queryParams.start) {
+        toast.error("End time must be after start time");
+        return;
+      } else {
+        setQueryParams("end", date2Unix(date));
+      }
+    }
+  };
+
+  const handleQuery = () => {
+    refetch();
     console.log("setQueryParams", queryParams);
   };
 
@@ -125,12 +133,14 @@ const Analytics = () => {
           ))}
         </div>
 
-        {/* Query Controls */}
         <div className="flex h-10 gap-4">
           <Dropdown
-            options={dropdownOptions.map((obj) => Object.keys(obj)[0])}
+            options={dropdownOptions.map((obj) => obj.key)}
             label="Query By"
             minW="128px"
+            selected={
+              dropdownOptions.find((item) => item.value === queryType)?.key ?? "Query Type"
+            }
             handleSelect={handleQueryTypeSelect}
           />
           {/* Time Range Picker */}
@@ -144,9 +154,9 @@ const Analytics = () => {
             >
               <span>From:</span>
               <DatePicker
-                selected={unix2Date(startTime)}
+                selected={unix2Date(queryParams.start ?? 0)}
                 onChange={(date: Date | null) =>
-                  date && setStartTime(date2Unix(date))
+                  date && handleStartTimeSelect(date)
                 }
                 showTimeSelect
                 timeFormat="HH:mm"
@@ -161,9 +171,9 @@ const Analytics = () => {
             >
               <span>To:</span>
               <DatePicker
-                selected={unix2Date(endTime)}
+                selected={unix2Date(queryParams.end ?? 0)}
                 onChange={(date: Date | null) =>
-                  date && setEndTime(date2Unix(date))
+                  date && handleEndTimeSelect(date)
                 }
                 showTimeSelect
                 timeFormat="HH:mm"
@@ -180,12 +190,13 @@ const Analytics = () => {
               <Dropdown
                 options={["10", "20", "30", "40", "50"]}
                 label="Page Size"
+                selected={queryParams.page_size?.toString() || "undefined"}
                 handleSelect={handleQueryPageSizeSelect}
               />
             </div>
             <button
               className="rounded bg-blue-500 p-2 text-white"
-              onClick={() => handleQuery(queryType, queryParams)}
+              onClick={handleQuery}
             >
               Query
             </button>
@@ -196,23 +207,18 @@ const Analytics = () => {
         {error && <div>Error fetching data</div>}
         {data && (
           <Tables
-            data={data}
-            currentPage={currentPage}
-            maxPage={maxPage}
-            hasPreviousPage={hasPreviousPage}
-            hasNextPage={hasNextPage}
-            fetchNextPage={() =>
-              setQueryParams((prev) => ({
-                ...prev,
-                page: (prev.page || 1) + 1,
-              }))
-            }
-            fetchPreviousPage={() =>
-              setQueryParams((prev) => ({
-                ...prev,
-                page: (prev.page || 1) - 1,
-              }))
-            }
+            data={data as any}
+            currentPage={currentPage ?? 1}
+            maxPage={totalPages}
+            pageSize={data.length}
+            hasPreviousPage={hasPreviousPage ?? false}
+            hasNextPage={hasNextPage ?? false}
+            fetchNextPage={() => {
+              setQueryParams("page", queryParams.page! + 1);
+            }}
+            fetchPreviousPage={() => {
+              setQueryParams("page", queryParams.page! - 1);
+            }}
             onFilterAdd={handleAddFilter}
           />
         )}

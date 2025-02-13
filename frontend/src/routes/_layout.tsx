@@ -54,7 +54,7 @@ const Layout = () => {
       </div>
       <div
         id="content-wrapper"
-        className="flex w-full flex-1 flex-col overflow-y-auto"
+        className="flex w-full flex-1 flex-col  overflow-auto"
       >
         <header className="relative min-h-[5%] p-1 mt-1">
           <div

@@ -11,3 +11,8 @@ export interface IPagination {
 export interface IRegion {
   region: string;
 }
+
+export interface IApiError {
+  code: number;
+  message: string;
+}

@@ -14,10 +14,17 @@ class ApiClient {
     });
 
     // Setup interceptors
+    // Request interceptors
     this.instance.interceptors.request.use(RequestInterceptors.addAuthHeader);
+
+    // Response interceptors
+    this.instance.interceptors.response.use(
+      ResponseInterceptors.handleAuthError,
+      null,
+    );
     this.instance.interceptors.response.use(
       null,
-      ResponseInterceptors.handleAuthError,
+      ResponseInterceptors.handleHttpError,
     );
   }
 }

@@ -1,4 +1,5 @@
-import { InternalAxiosRequestConfig, AxiosResponse } from "axios";
+import { InternalAxiosRequestConfig, AxiosResponse, AxiosError } from "axios";
+import { IApiError } from "./models/base";
 
 export class RequestInterceptors {
   public static addAuthHeader = (
@@ -11,16 +12,28 @@ export class RequestInterceptors {
 }
 
 export class ResponseInterceptors {
-  public static handleAuthError = (response: AxiosResponse): AxiosResponse => {
-    // TODO: Add error handling logic
-    // TODO: Add refresh token implementation, both frontend and backend
+  public static handleAuthError = async (
+    response: AxiosResponse,
+  ): Promise<AxiosResponse> => {
     if (response.status === 401) {
-      console.error("Unauthorized request");
+      console.error("Unauthorized request, trying to refresh token...");
+      await ResponseInterceptors.handleRefreshToken();
     }
     return response;
   };
+
   private static handleRefreshToken = async (): Promise<void> => {
     // TODO: Implement refresh token logic
     console.error("Refresh token logic not implemented");
+  };
+
+  public static handleHttpError = (error: AxiosError): Promise<IApiError> => {
+    if (error.response) {
+      return Promise.reject({
+        code: error.response.status,
+        message: error.response.data,
+      });
+    }
+    return Promise.reject(error);
   };
 }

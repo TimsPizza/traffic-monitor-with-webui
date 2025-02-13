@@ -18,7 +18,7 @@ module.exports = {
         sourceCodePro: ["Source Code Pro", "monospace"],
       },
       colors: {
-        "bg-light": "#F4F7FD",
+        "bg-light": "#F2F2F7",
         "bg-dark": "#1F2937",
         "container-light": "#FFFFFF",
         "container-dark": "#111827",
