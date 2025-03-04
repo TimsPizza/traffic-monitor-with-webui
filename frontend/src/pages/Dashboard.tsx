@@ -184,7 +184,7 @@ const Dashboard = () => {
   return (
     <div id="dashboard-wrapper" className="mx-8 h-full rounded-md">
       <Row className="mt-2 px-2">
-        <Col md={12} lg={6} className="mb-2 p-4">
+        <Col md={12} lg={6} className="mb-2  p-4">
           <Chart
             chartType={EChartType.SMOOTH_LINE}
             title="7 Days Traffic Summary"
@@ -221,8 +221,8 @@ const Dashboard = () => {
           />
         </Col>
         <Col md={12} lg={6} className="mb-2 p-4">
-          <Row className="h-56">
-            <Col lg={3} className="h-full">
+          <Row className="">
+            <Col lg={4} className="h-full">
               <Card
                 title="HTTPS"
                 color="from-emerald-500 to-emerald-600"
@@ -232,7 +232,7 @@ const Dashboard = () => {
                 }}
               />
             </Col>
-            <Col lg={3} className="h-full">
+            <Col lg={4} className="h-full">
               <Card
                 title="HTTP"
                 color="from-blue-500 to-blue-600"
@@ -242,7 +242,7 @@ const Dashboard = () => {
                 }}
               />
             </Col>
-            <Col lg={3} className="h-full">
+            <Col lg={4} className="h-full">
               <Card
                 title="SSH"
                 color="from-violet-500 to-violet-600"
@@ -252,7 +252,7 @@ const Dashboard = () => {
                 }}
               />
             </Col>
-            <Col lg={3} className="h-full">
+            <Col lg={4} className="h-full mt-4">
               <Card
                 title="Unknown"
                 color="from-gray-500 to-gray-600"
