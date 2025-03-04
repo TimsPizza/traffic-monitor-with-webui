@@ -110,9 +110,8 @@ export const unix2DateString = (
 export const unix2Date = (unix: number, timezone: TTimezone = "GMT+8") => {
   const ianaTimeZone = GMT_TO_IANA[timezone];
   return new Date(unix * 1000);
-}
+};
 
- 
 export const dateString2Unix = (date: string) => {
   if (!isValidDateStr(date)) {
     throw new Error("Invalid date string");
@@ -122,7 +121,7 @@ export const dateString2Unix = (date: string) => {
 
 export const date2Unix = (date: Date) => {
   return date.getTime() / 1000;
-}
+};
 
 export const isValidDateStr = (dateStr: string) => {
   const reg = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/; // YYYY-MM-DD HH:MM:SS

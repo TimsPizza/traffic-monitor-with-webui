@@ -28,6 +28,9 @@ module.exports = {
         error: "#FF355B",
         warning: "#FFC021",
         info: "#2F86EB",
+        'tw-primary': "#563BFF",
+        'tw-secondary': "#FFC021",
+
       },
       keyframes: {
         "slide-in": {

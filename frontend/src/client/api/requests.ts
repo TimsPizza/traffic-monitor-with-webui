@@ -1,30 +1,30 @@
 import {
-  IByProtocolResponse,
+  IByDestinationPort,
+  IByProtocol,
+  IBySourceIP,
+  IBySourceRegion,
+  IByTimeRange,
+  IByTopSourceIps,
+  IProtocolAnalysis,
+  IProtocolDistribution,
+  ITimeSeries,
+  ITrafficSummary,
+  TLoginForm,
+  TSignUpForm,
+} from "../api/models/request";
+import {
   IByDestinationPortResponse,
-  IByTimeRangeResponse,
-  IBySourceRegionResponse,
+  IByProtocolResponse,
   IBySourceIPResponse,
-  ITrafficSummaryResponse,
-  ITimeSeriesResponse,
-  IProtocolAnalysisResponse,
-  IProtocolDistributionResponse,
+  IBySourceRegionResponse,
+  IByTimeRangeResponse,
   IByTopSourceIpsResponse,
+  IPaginatedResponse,
+  IProtocolDistributionResponse,
+  ITimeSeriesResponse,
+  ITrafficSummaryResponse,
   TAuthResponse,
 } from "../api/models/response";
-import {
-  IBySourceIP,
-  IByProtocol,
-  IByTimeRange,
-  IByDestinationPort,
-  IBySourceRegion,
-  IProtocolDistribution,
-  ITrafficSummary,
-  ITimeSeries,
-  IProtocolAnalysis,
-  IByTopSourceIps,
-  TSignUpForm,
-  TLoginForm,
-} from "../api/models/request";
 import { apiClient } from "./apiClient";
 
 const cleanQueryParams = (query: Object) => {
@@ -64,7 +64,7 @@ export class DataApi {
 
   public static async getBySourceIP(
     config: IBySourceIP,
-  ): Promise<IBySourceIPResponse> {
+  ): Promise<IPaginatedResponse<IBySourceIPResponse>> {
     return apiClient.instance.get(`${DataApi.BASE_URL}/source-ip`, {
       params: cleanQueryParams(config),
     });
@@ -72,7 +72,7 @@ export class DataApi {
 
   public static async getByProtocol(
     config: IByProtocol,
-  ): Promise<IByProtocolResponse> {
+  ): Promise<IPaginatedResponse<IByProtocolResponse>> {
     return apiClient.instance.get(`${DataApi.BASE_URL}/protocol`, {
       params: cleanQueryParams(config),
     });
@@ -80,7 +80,7 @@ export class DataApi {
 
   public static async getByTimeRange(
     config: IByTimeRange,
-  ): Promise<IByTimeRangeResponse> {
+  ): Promise<IPaginatedResponse<IByTimeRangeResponse>> {
     return apiClient.instance.get(`${DataApi.BASE_URL}/time`, {
       params: cleanQueryParams(config),
     });
@@ -88,7 +88,7 @@ export class DataApi {
 
   public static async getByDestinationPort(
     config: IByDestinationPort,
-  ): Promise<IByDestinationPortResponse> {
+  ): Promise<IPaginatedResponse<IByDestinationPortResponse>> {
     return apiClient.instance.get(`${DataApi.BASE_URL}/port`, {
       params: cleanQueryParams(config),
     });
@@ -96,7 +96,7 @@ export class DataApi {
 
   public static async getBySourceRegion(
     config: IBySourceRegion,
-  ): Promise<IBySourceRegionResponse> {
+  ): Promise<IPaginatedResponse<IBySourceRegionResponse>> {
     return apiClient.instance.get(`${DataApi.BASE_URL}/region`, {
       params: cleanQueryParams(config),
     });
@@ -104,7 +104,7 @@ export class DataApi {
 
   public static async getTimeSeries(
     config: ITimeSeries,
-  ): Promise<ITimeSeriesResponse> {
+  ): Promise<IPaginatedResponse<ITimeSeriesResponse>> {
     return apiClient.instance.get(`${DataApi.BASE_URL}/time-series`, {
       params: cleanQueryParams(config),
     });
@@ -112,7 +112,7 @@ export class DataApi {
 
   public static async getTrafficSummary(
     config: ITrafficSummary,
-  ): Promise<ITrafficSummaryResponse> {
+  ): Promise<IPaginatedResponse<ITrafficSummaryResponse>> {
     return apiClient.instance.get(`${DataApi.BASE_URL}/traffic-summary`, {
       params: cleanQueryParams(config),
     });
@@ -120,7 +120,7 @@ export class DataApi {
 
   public static async getProtocolDistribution(
     config: IProtocolDistribution,
-  ): Promise<IProtocolDistributionResponse> {
+  ): Promise<IPaginatedResponse<IProtocolDistributionResponse>> {
     return apiClient.instance.get(`${DataApi.BASE_URL}/protocol-distribution`, {
       params: cleanQueryParams(config),
     });
@@ -128,7 +128,7 @@ export class DataApi {
 
   public static async getProtocolAnalysis(
     config: IProtocolAnalysis,
-  ): Promise<IProtocolAnalysisResponse> {
+  ): Promise<IPaginatedResponse<IProtocolAnalysisResponse>> {
     return apiClient.instance.get(`${DataApi.BASE_URL}/protocol-analysis`, {
       params: cleanQueryParams(config),
     });
@@ -136,7 +136,7 @@ export class DataApi {
 
   public static async getTopSourceIPs(
     config: IByTopSourceIps,
-  ): Promise<IByTopSourceIpsResponse> {
+  ): Promise<IPaginatedResponse<IByTopSourceIpsResponse>> {
     return apiClient.instance.get(`${DataApi.BASE_URL}/top-source-ips`, {
       params: cleanQueryParams(config),
     });

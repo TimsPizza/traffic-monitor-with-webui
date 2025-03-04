@@ -1,4 +1,5 @@
 import { AxiosResponse } from "axios";
+import { ApiError } from "../api/models/base";
 import {
   IByDestinationPort,
   IByProtocol,
@@ -27,18 +28,32 @@ export class QueryService {
     'topSourceIPs': QueryService.queryTopSourceIPs,
   };
 
+  /**
+   * 
+   * @param type 
+   * @param payload 
+   * @generics TRequest, TResponse
+   * @returns The response of the query.
+   * @throws {ApiError} if the query type is invalid
+   * @throws {ApiError} if the query fails
+   */
   public static async query<TRequest extends object, TResponse>(
     type: keyof typeof QueryService.queryMethods,
     payload: TRequest
   ) {
     const method = QueryService.queryMethods[type];
     if (!method) {
-      throw new Error(`Invalid query type: ${type}`);
+      throw new ApiError(`Invalid query type: ${type}`, 400);
     }
-    //@ts-ignore
-    const response = await method(payload as any) as Promise<AxiosResponse<TResponse>>;
-    console.log("queryService response:", response);
-    return response;
+    try {
+      // @ts-ignore
+      const response = await method(payload as any) as Promise<AxiosResponse<TResponse>>;
+      console.log("queryService response:", response);
+      return response;
+    } catch (error) {
+      console.error("queryService error:", error);
+      throw ApiError.fromError(error);
+    }
   }
 
   public static async queryBySourceIP(config: IBySourceIP) {

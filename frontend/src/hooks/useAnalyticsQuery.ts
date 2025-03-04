@@ -1,8 +1,11 @@
 import { useQuery } from "react-query";
+import { ApiError } from "../client/api/models/base";
+import {
+  TQueryResponses
+} from "../client/api/models/response";
 import { QueryService } from "../client/services/query";
 import { TQueryType } from "../client/types";
 import useToast from "./useToast";
-import { IPaginatedResponse } from "../client/api/models/response";
 
 interface UseAnalyticsQueryOptions<T extends object> {
   queryType: TQueryType;
@@ -11,44 +14,45 @@ interface UseAnalyticsQueryOptions<T extends object> {
   enabled?: boolean;
   staleTime?: number;
   cacheTime?: number;
+  retryDelay?: number;
+  retry?: number;
 }
 
-export function useAnalyticsQuery<T extends object, R>({
+export function useAnalyticsQuery<T extends object, R extends TQueryResponses>({
   queryType,
   params,
   refetchInterval = false,
   enabled = true,
   staleTime,
   cacheTime,
+  retryDelay = 5000,
+  retry = 3,
 }: UseAnalyticsQueryOptions<T>) {
-  const toast = useToast();
-
+  const toast = useToast({
+    position: "top-right",
+  });
+  console.log("useAnalyticsQuery:", queryType, params);
   const {
     data: queryResult,
     isLoading,
     isError,
     error,
     refetch,
-  } = useQuery<IPaginatedResponse<R>, unknown, IPaginatedResponse<R>>({
+  } = useQuery<R, ApiError, R>({
     queryKey: ["analytics", queryType, params],
-    queryFn: async (): Promise<IPaginatedResponse<R>> => {
-      const response = await QueryService.query<T, IPaginatedResponse<R>>(
-        queryType,
-        params,
-      );
-      return {
-        data: response.data.data || [],
-        total: response.data.total || 0,
-        page: response.data.page || 1,
-        page_size: response.data.page_size || 10,
-      };
+    queryFn: async () => {
+      const response = await QueryService.query<T, R>(queryType, params);
+      return response.data;
     },
     refetchInterval,
+    retryDelay: retryDelay,
+    retry: retry,
+
     onError: (error) => {
       toast.error("Query failed: " + error);
     },
     onSuccess: () => {
-      toast.success("Query success");
+      toast.success("Success");
     },
     enabled,
     staleTime: staleTime ?? Infinity,
@@ -58,7 +62,6 @@ export function useAnalyticsQuery<T extends object, R>({
   const hasNextPage = queryResult
     ? queryResult.page < Math.ceil(queryResult.total / queryResult.page_size)
     : false;
-
   const hasPreviousPage = queryResult ? queryResult.page > 1 : false;
 
   return {

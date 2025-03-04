@@ -47,8 +47,6 @@ const columns = [
   }),
 ];
 
-// type TAcceptableTableData = IRe
-
 interface TableProps {
   data: IFullAccessRecordResponse[];
   currentPage: number;
@@ -78,19 +76,19 @@ const Tables: React.FC<TableProps> = ({
 
   const handleCellClick = (cell: Cell<IFullAccessRecordResponse, unknown>) => {
     if (!onFilterAdd) return;
-    
+
     const columnToFilterMap: Record<string, string> = {
-      'src_ip': 'ip',
-      'region': 'region',
-      'protocol': 'protocol',
-      'dst_port': 'port'
+      src_ip: "ip",
+      region: "region",
+      protocol: "protocol",
+      dst_port: "port",
     };
 
     const filterKey = columnToFilterMap[cell.column.id];
     if (filterKey) {
       onFilterAdd({
         key: filterKey,
-        value: cell.getValue() as string
+        value: cell.getValue() as string,
       });
     }
   };
@@ -104,8 +102,8 @@ const Tables: React.FC<TableProps> = ({
     initialState: {
       pagination: {
         pageSize: pageSize,
-      }
-    }
+      },
+    },
   });
 
   return (
@@ -113,7 +111,7 @@ const Tables: React.FC<TableProps> = ({
       <div className="overflow-x-auto rounded-lg">
         <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
           <table className="w-full divide-y divide-gray-200">
-            <thead className="sticky top-0 border-l border-r border-t bg-container-light rounded-">
+            <thead className="rounded- sticky top-0 border-l border-r border-t bg-container-light">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
@@ -141,9 +139,11 @@ const Tables: React.FC<TableProps> = ({
                     <td
                       key={cell.id}
                       className={`whitespace-nowrap px-4 py-2 text-sm ${
-                        ['src_ip', 'region', 'protocol', 'dst_port'].includes(cell.column.id)
-                          ? 'text-blue-600 hover:text-blue-800 cursor-pointer'
-                          : 'text-gray-500'
+                        ["src_ip", "region", "protocol", "dst_port"].includes(
+                          cell.column.id,
+                        )
+                          ? "cursor-pointer text-blue-600 hover:text-blue-800"
+                          : "text-gray-500"
                       }`}
                       onClick={() => handleCellClick(cell)}
                     >

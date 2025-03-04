@@ -1,7 +1,7 @@
 import { ITimeRange } from "./base";
 
 export interface IPaginatedResponse<T> {
-  data: T[];
+  data: T;
   total: number;
   page: number;
   page_size: number;
@@ -18,13 +18,16 @@ export interface IFullAccessRecordResponse {
 }
 
 export interface IByProtocolResponseItem extends IFullAccessRecordResponse {}
-export interface IByProtocolResponse extends IPaginatedResponse<IByProtocolResponseItem> {}
+export interface IByProtocolResponse
+  extends IPaginatedResponse<IByProtocolResponseItem> {}
 
 export interface IByRegionResponseItem extends IFullAccessRecordResponse {}
-export interface IByRegionResponse extends IPaginatedResponse<IByRegionResponseItem> {}
+export interface IByRegionResponse
+  extends IPaginatedResponse<IByRegionResponseItem> {}
 
 export interface IByTimeRangeResponseItem extends IFullAccessRecordResponse {}
-export interface IByTimeRangeResponse extends IPaginatedResponse<IByTimeRangeResponseItem> {}
+export interface IByTimeRangeResponse
+  extends IPaginatedResponse<IByTimeRangeResponseItem> {}
 
 export interface IBySourceIpResponseItem extends IFullAccessRecordResponse {}
 export interface IBySourceIPResponse
@@ -60,22 +63,25 @@ export interface ITrafficSummaryResponse
   extends IPaginatedResponse<ITrafficSummaryResponseItem> {}
 
 export interface IProtocolDistributionResponseRecord {
-  protocol: string;
-  percentage_count: number;
-  percentage_bytes: number;
-  packet_count: number;
-  total_bytes: number;
+  distribution: Array<{
+    protocol: string;
+    percentage_count: number;
+    percentage_bytes: number;
+    packet_count: number;
+    total_bytes: number;
+  }>;
+  time_range: ITimeRange;
 }
 export interface IProtocolDistributionResponse
   extends IPaginatedResponse<IProtocolDistributionResponseRecord> {}
 
-export interface ITimeSeriesResponseItem {}
+export type ITimeSeriesResponseItem = Array<{
+  total_packets: number;
+  total_bytes: number;
+  time_range: ITimeRange;
+}>;
 export interface ITimeSeriesResponse
   extends IPaginatedResponse<ITimeSeriesResponseItem> {}
-
-export interface IProtocolAnalysisResponseItem {}
-export interface IProtocolAnalysisResponse
-  extends IPaginatedResponse<IProtocolAnalysisResponseItem> {}
 
 export type TSignUpResponse = {
   username: string;
@@ -89,3 +95,15 @@ export type TAuthResponse = {
   access_token: string;
   token_type: string;
 };
+
+export type TQueryResponses =
+  | ITimeSeriesResponse
+  | IProtocolDistributionResponse
+  | ITrafficSummaryResponse
+  | IByTopSourceIpsResponse
+  | IBySourceRegionResponse
+  | IByDestinationPortResponse
+  | IBySourceIPResponse
+  | IByTimeRangeResponse
+  | IByRegionResponse
+  | IByProtocolResponse;

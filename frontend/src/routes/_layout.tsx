@@ -15,6 +15,10 @@ const Layout = () => {
     setShouldSidebarCollapse_(val);
     setShowOverlay(!val);
   };
+
+  const toggleSidebarCollapse = () => {
+    setShouldSidebarCollapse(!shouldSidebarCollapse);
+  };
   const sidebarRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     navigate("/dashboard");
@@ -33,19 +37,26 @@ const Layout = () => {
       className="relative flex min-h-screen flex-row bg-bg-light"
     >
       <div
-        id="overlay"
-        className={`fixed inset-0 z-40 bg-black bg-opacity-50 transition-opacity duration-200 ${showOverlay ? "opacity-100" : "pointer-events-none opacity-0"}`}
+        id="mobile-overlay"
+        className={`fixed inset-0 z-40 bg-black bg-opacity-50 transition-opacity duration-200 lg:hidden ${showOverlay ? "opacity-100" : "pointer-events-none opacity-0"}`}
         onClick={() => {
           setShouldSidebarCollapse(true);
           setShowOverlay(false);
         }}
-      ></div>
+      />
       <div
         id="sidebar-wrapper"
         ref={sidebarRef}
-        className={`fixed h-screen w-[256px] overflow-hidden rounded-r-lg my-2 transition-transform duration-200 ease-linear lg:static lg:h-full lg:translate-x-0 lg:rounded-l-lg ${shouldSidebarCollapse ? "-translate-x-[256px]" : "z-50"} `}
+        className={`fixed my-2 mt-0 h-screen mx-1 overflow-hidden bg-container-light transition-transform duration-200 ease-linear lg:static lg:h-full lg:translate-x-0`}
       >
-        <nav className="left-0 top-0 z-50 h-full w-full">
+        <div className="w-full block">
+          <button
+            id="sidebar-toggler"
+            className={`bi bi-justify-left ml-6 scale-[1.2] p-2 text-xl block`}
+            onClick={toggleSidebarCollapse}
+          />
+        </div>
+        <nav className="left-0 top-0 z-50 h-full w-full flex-1">
           <Sidebar
             setShouldSidebarCollapse={setShouldSidebarCollapse}
             shouldSidebarCollapse={shouldSidebarCollapse}
@@ -54,9 +65,9 @@ const Layout = () => {
       </div>
       <div
         id="content-wrapper"
-        className="flex w-full flex-1 flex-col  overflow-auto"
+        className="flex w-full flex-1 flex-col overflow-auto"
       >
-        <header className="relative min-h-[5%] p-1 mt-1">
+        <header className="relative mt-1 min-h-[5%] p-1">
           <div
             id="sidebar-toggle"
             className={`absolute left-0 top-1/2 z-50 h-8 w-8 -translate-y-1/2 translate-x-1/2 rounded-lg border border-gray-300 text-center transition-transform duration-300 ${shouldSidebarCollapse ? "" : "hidden"} lg:hidden`}

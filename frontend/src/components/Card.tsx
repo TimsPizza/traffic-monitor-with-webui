@@ -1,67 +1,87 @@
-import React, { useEffect } from "react";
-import {
-  EChartType,
-  TColorPalette,
-  TChartData,
-  DEFAULT_COLOR_PALETTES,
-} from "../client/types";
-import Chart from "./Chart";
+import React from "react";
+import { FiArrowUpRight, FiArrowDownRight } from "react-icons/fi";
+
+export interface ICardData {
+  loading: boolean;
+  data: { 
+    [key: string]: number | string | undefined;
+    trend?: number; // 新增趋势数据
+  };
+}
 
 interface ICardProps {
   title?: string;
-  data?: string | TChartData[];
-  type?: EChartType | "classic";
-  colorPalette?: TColorPalette;
+  data?: ICardData;
+  color?: string;
 }
 
 const Card: React.FC<ICardProps> = ({
-  title: title_ = "Default Title",
-  data: data_ = "Default Data",
-  type: cardType = "classic",
-  // title uses index 0 of colorPalette, pass the slice[1:] to Chart component
-  colorPalette = DEFAULT_COLOR_PALETTES[0],
+  title = "Default Title",
+  data = { loading: false, data: { default: 0 } },
+  color = "from-blue-500 to-blue-600",
 }) => {
-  const [title, setTitle] = React.useState("");
-  const [data, setData] = React.useState<string | TChartData[]>("");
-  const [timeRange, setTimeRange] = React.useState();
-  useEffect(() => {
-    setTitle(title_);
-    setData(data_);
-    return () => {};
-  }, [title_, data_]);
+  // Loading skeleton animation class
+  const skeletonClass = "animate-pulse bg-gray-200 rounded";
+  
+  // Helper function to render trend indicator
+  const renderTrend = (trend?: number) => {
+    if (trend === undefined) return null;
+    const isPositive = trend >= 0;
+    const Icon = isPositive ? FiArrowUpRight : FiArrowDownRight;
+    return (
+      <div className={`flex items-center gap-1 text-sm ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+        <Icon className="h-4 w-4" />
+        <span>{Math.abs(trend)}%</span>
+      </div>
+    );
+  };
 
   return (
     <div
-      id="card-wrapper"
-      className={`flex max-h-72 min-h-36 flex-col justify-center rounded-lg bg-container-light`}
-      // style={{ boxShadow: "3px 3px 3px -4px #000000", color: colorPalette[0] }}
+      className="relative h-full w-full overflow-hidden rounded-xl bg-white p-6 shadow-lg transition-all duration-300 hover:shadow-xl dark:bg-gray-800"
     >
-      {cardType === "classic" ? (
-        <>
-          <div
-            id="card-title"
-            className="w-full self-start  p-1"
-          >
-            <span className="text-2xl font-bold">{title}</span>
-          </div>
-          <div id="card-data" className="flex-1">
-            <span className="text-lg">
-              {typeof data === "string" ? data : "Invalid data"}
+      {/* Decorative gradient element */}
+      <div className={`absolute -right-4 -top-4 h-24 w-24 rotate-12 rounded-full bg-gradient-to-br ${color} opacity-10`} />
+      
+      {/* Card Header */}
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className={`flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br ${color}`}>
+            <span className="text-lg font-semibold text-white">
+              {title[0]}
             </span>
           </div>
-          ƒ
-        </>
-      ) : (
-        <div className="h-full w-full">
-          <Chart
-            chartType={cardType}
-            title={title}
-            data={Array.isArray(data) ? data : []}
-            colorPalette={colorPalette}
-            bordered={false}
-          />
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+            {title}
+          </h3>
         </div>
-      )}
+        {!data.loading && renderTrend(data.data.trend)}
+      </div>
+
+      {/* Card Content */}
+      <div className="space-y-4">
+        {data.loading ? (
+          // Loading skeleton
+          <>
+            <div className={`h-4 w-2/3 ${skeletonClass}`} />
+            <div className={`h-4 w-1/2 ${skeletonClass}`} />
+          </>
+        ) : (
+          Object.entries(data.data).map(([key, value]) => {
+            if (key === 'trend') return null; // Skip trend in main content
+            return (
+              <div key={key} className="flex flex-col">
+                <span className="text-sm font-medium text-gray-500 dark:text-gray-400 capitalize">
+                  {key}
+                </span>
+                <span className="text-xl font-bold text-gray-900 dark:text-white">
+                  {value}
+                </span>
+              </div>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 };

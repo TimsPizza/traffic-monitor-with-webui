@@ -15,7 +15,7 @@ export type TChartData =
 
 export type TChartDataBase = {
   name: string; // data name for x-axis display
-  value: number;
+  value: number | string;
 };
 export type TRadialBarData = TChartDataBase & {
   fill: string;
@@ -26,7 +26,7 @@ export type TPolyLineData = TChartDataBase & {
 };
 
 export type TPieData = TChartDataBase & {
-  fill: string;
+  fill?: string;
 };
 
 export type TSmoothLineData = TPolyLineData;
@@ -103,6 +103,7 @@ export const DATE_FORMATTERS = {
 export enum EMediaBreakpoints {
   sm = 640,
   md = 768,
+  // lte lg = mobile
   lg = 1024,
   xl = 1280,
   xxl = 1536,

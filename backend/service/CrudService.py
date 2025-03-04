@@ -1,5 +1,7 @@
 from collections import Counter
+from logging import Logger
 from typing import List, Type, Tuple, Optional, Dict, Any
+from core.config import ENV_CONFIG
 from models.Dtos import (
     FullPacket,
     NetworkStats,
@@ -17,6 +19,7 @@ from db.DatabaseOperations import DatabaseOperations
 class CrudService:
     def __init__(self):
         self.db_ops = DatabaseOperations()
+        self.logger = Logger(self.__class__.__name__, level=ENV_CONFIG.log_level)
 
     def _build_paginated_response(
         self,

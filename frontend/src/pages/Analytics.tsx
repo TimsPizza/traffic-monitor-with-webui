@@ -55,6 +55,7 @@ const Analytics = () => {
   const {
     data,
     error,
+    isError,
     isLoading,
     refetch,
     hasNextPage,
@@ -204,6 +205,7 @@ const Analytics = () => {
         </div>
 
         {isLoading && <div>Loading...</div>}
+        {isError && <div>Error: {String(error)}</div>}
         {error && <div>Error fetching data</div>}
         {data && (
           <Tables

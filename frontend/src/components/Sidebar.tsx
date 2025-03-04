@@ -6,37 +6,35 @@ const Sidebar: React.FC<{
   setShouldSidebarCollapse: (val: boolean) => void;
 }> = ({ shouldSidebarCollapse, setShouldSidebarCollapse }) => {
   const navItems = [
-    { path: "/dashboard", icon: "bi-house", label: "Dashboard" },
-    { path: "/settings", icon: "bi-gear", label: "Settings" },
+    { path: "/dashboard", icon: "bi-house-fill", label: "Dashboard" },
+    { path: "/settings", icon: "bi-gear-fill", label: "Settings" },
     { path: "/analytics", icon: "bi-graph-up", label: "Analytics" },
-    { path: "/reports", icon: "bi-file-earmark-text", label: "Reports" },
+    { path: "/reports", icon: "bi-file-earmark-text-fill", label: "Reports" },
   ];
   return (
     <div className={`h-full bg-container-light`}>
-      <div
-        id="topper"
-        className="flex h-[8%] flex-row items-center justify-center gap-4 px-3"
-      >
-        <i id="logo" className="bi bi-box-fill text-3xl" />
-        <span id="brand" className="text-xl font-bold">
-          The App
-        </span>
-      </div>
-
       <div className="flex h-[92%] flex-col space-y-1 p-2">
         {navItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
             className={({ isActive }) =>
-              `flex items-center space-x-3 rounded-lg p-2 hover:bg-gray-200 ${
-                isActive ? "text-blue-700" : "text-gray-700"
+              `before:bg-tw-primary relative flex origin-center items-center justify-center rounded-lg p-2 text-blue-700 transition-transform duration-300 before:absolute before:left-0 before:top-1/2 before:h-7 before:w-12 before:-translate-x-[110%] before:-translate-y-1/2 before:rounded-md hover:bg-gray-200 ${
+                isActive
+                  ? "before:scale-y-100"
+                  : "text-gray-700 before:scale-y-0"
               }`
             }
             onClick={() => setShouldSidebarCollapse(true)}
           >
-            <i className={`bi ml-2 ${item.icon} text-xl`} />
-            <span>{item.label}</span>
+            <span className="bg-tw-primary mx-auto flex aspect-[4/3] w-12 items-center justify-center rounded-lg text-white ">
+              <i className={`bi ml-2 ${item.icon} text-md mx-auto text-xl scale-95`} />
+            </span>
+            <div
+              className={`${shouldSidebarCollapse ? "w-0" : "ml-2 w-24"} origin-left overflow-hidden transition-all duration-200`}
+            >
+              <span>{item.label}</span>
+            </div>
           </NavLink>
         ))}
       </div>
