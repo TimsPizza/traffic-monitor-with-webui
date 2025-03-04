@@ -1,5 +1,6 @@
 import React from "react";
 import { FiArrowUpRight, FiArrowDownRight } from "react-icons/fi";
+import CountUp from "react-countup";
 
 export interface ICardData {
   loading: boolean;
@@ -22,6 +23,7 @@ const Card: React.FC<ICardProps> = ({
 }) => {
   // Loading skeleton animation class
   const skeletonClass = "animate-pulse bg-gray-200 rounded";
+  console.log(data);
 
   // Helper function to render trend indicator
   const renderTrend = (trend?: number) => {
@@ -77,7 +79,16 @@ const Card: React.FC<ICardProps> = ({
                   {key}
                 </span>
                 <span className="text-xl font-bold text-gray-900 dark:text-white">
-                  {value}
+                  {typeof value === "string" ? (
+                    value
+                  ) : (
+                    <CountUp
+                      end={value as number}
+                      start={0}
+                      duration={3}
+                      delay={0}
+                    />
+                  )}
                 </span>
               </div>
             );
