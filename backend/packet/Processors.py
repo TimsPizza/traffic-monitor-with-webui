@@ -1,10 +1,33 @@
 import datetime
 from uuid import uuid4
-
+import yaml
+import os
 from .Packet import Layer, ProcessedPacket
 from service.GeoIpService import GeoIPSingleton
 import struct
 from scapy.all import TCP, Raw
+import logging
+
+logger = logging.getLogger(__name__)
+
+# 读取配置文件获取端口-协议映射 (Read config file to get port-protocol mappings)
+CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.yaml")
+
+
+def _load_port_protocol_map() -> dict:
+    """从配置文件加载端口-协议映射 (Load port-protocol mappings from config file)"""
+    try:
+        if not os.path.exists(CONFIG_PATH):
+            return {}
+        with open(CONFIG_PATH, "r") as f:
+            config = yaml.safe_load(f) or {}
+            return {
+                rule["port"]["port"]: rule["protocol"]
+                for rule in config.get("rules", [])
+            }
+    except Exception as e:
+        logger.error(f"Error loading port-protocol mappings: {e}")
+        return {}
 
 
 def check_udp(scapy_packet, packet: ProcessedPacket) -> None:
@@ -13,7 +36,6 @@ def check_udp(scapy_packet, packet: ProcessedPacket) -> None:
         packet.dst_port = scapy_packet["UDP"].dport
         packet.protocol = "UDP"
         packet.source_ip = scapy_packet["IP"].src
-
         packet.layer = Layer.TRANSPORT
 
 
@@ -111,7 +133,7 @@ def check_rtsp(payload: bytes) -> bool:
 
 def check_smb(payload: bytes) -> bool:
     """SMB协议特征检测"""
-    return len(payload) >= 4 and payload[0] == 0x00 and payload[1:4] == b"\xffSMB"
+    return len(payload) >= 4 and payload[0] == 0x00 and payload[1:4] == b"SMB"
 
 
 def check_ntp(payload: bytes) -> bool:
@@ -131,7 +153,7 @@ def check_quic(payload: bytes) -> bool:
 
 def check_bittorrent(payload: bytes) -> bool:
     """BitTorrent协议特征检测"""
-    return payload.startswith(b"\x13BitTorrent protocol") or b"8:announce" in payload
+    return payload.startswith(b"BitTorrent protocol") or b"8:announce" in payload
 
 
 def check_rdp(payload: bytes) -> bool:
@@ -152,7 +174,7 @@ def check_mysql(payload: bytes) -> bool:
     """MySQL协议特征检测"""
     if len(payload) < 4:
         return False
-    length = struct.unpack("<I", payload[:3] + b"\x00")[0]
+    length = struct.unpack("<I", payload[:3] + b"")[0]
     return len(payload) >= length + 4 and payload[3] == 0x00
 
 
@@ -165,7 +187,7 @@ def check_application_protocol(scapy_packet, packet: ProcessedPacket) -> None:
     dport = scapy_packet[TCP].dport
     payload = bytes(scapy_packet[TCP].payload) if scapy_packet.haslayer(Raw) else b""
 
-    # sort by most common protocols
+    # 按最常见协议排序的特征检测 (Payload-based protocol detection sorted by most common protocols)
     protocol_checks = [
         (check_http, "HTTP"),
         (check_tls, "HTTPS"),
@@ -184,76 +206,14 @@ def check_application_protocol(scapy_packet, packet: ProcessedPacket) -> None:
         (check_rtp, "RTP"),
     ]
 
-    # first check by payload
+    # 先通过载荷检测 (First check by payload)
     for check_func, proto in protocol_checks:
         if check_func(payload):
             packet.protocol = proto
             return
 
-    # fallback to port-based protocol detection
-    port_map = {
-        80: "HTTP",
-        443: "HTTPS",
-        53: "DNS",
-        21: "FTP",
-        22: "SSH",
-        25: "SMTP",
-        110: "POP3",
-        143: "IMAP",
-        3306: "MySQL",
-        3389: "RDP",
-        5900: "VNC",
-        6379: "Redis",
-        27017: "MongoDB",
-        5432: "PostgreSQL",
-        8080: "HTTP-ALT",
-        8443: "HTTPS-ALT",
-        161: "SNMP",
-        389: "LDAP",
-        636: "LDAPS",
-        5060: "SIP",
-        5061: "SIPS",
-        1194: "OpenVPN",
-        1723: "PPTP",
-        5000: "UPnP",
-        5353: "mDNS",
-        1900: "SSDP",
-        514: "Syslog",
-        69: "TFTP",
-        123: "NTP",
-        67: "DHCP",
-        68: "DHCP",
-        137: "NetBIOS",
-        138: "NetBIOS",
-        139: "NetBIOS",
-        445: "SMB",
-        520: "RIP",
-        179: "BGP",
-        88: "Kerberos",
-        548: "AFP",
-        631: "IPP",
-        873: "Rsync",
-        992: "Telnet over SSL",
-        993: "IMAPS",
-        995: "POP3S",
-        1812: "RADIUS",
-        1813: "RADIUS",
-        1645: "RADIUS (legacy)",
-        1646: "RADIUS (legacy)",
-        3478: "STUN/TURN",
-        3479: "STUN/TURN",
-        500: "IPSec",
-        4500: "IPSec",
-        119: "NNTP",
-        563: "NNTPS",
-        6667: "IRC",
-        6697: "IRC over SSL",
-        10000: "Webmin",
-        11211: "Memcached",
-        27015: "Steam",
-        25565: "Minecraft",
-    }
-
+    # 从配置文件加载端口映射 (Load port mappings from config)
+    port_map = _load_port_protocol_map()
     packet.protocol = port_map.get(sport) or port_map.get(dport) or "Unknown"
 
 
@@ -279,7 +239,6 @@ def check_ssh_type(scapy_packet, packet: ProcessedPacket):
 
 
 def check_src_ip_region(scapy_packet, packet: ProcessedPacket):
-
     if not scapy_packet.haslayer("IP") or GeoIPSingleton.given_up:
         return
     if packet.source_ip != "":

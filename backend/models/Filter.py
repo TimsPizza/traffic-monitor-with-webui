@@ -1,4 +1,4 @@
-from typing import Annotated, Optional, Union
+from typing import Annotated, Optional, Union, Literal
 from enum import Enum
 
 
@@ -49,6 +49,8 @@ class CaptureFilterRecord(BaseModel):
     src_port: Optional[List[int]] = None
     dst_port: Optional[List[int]] = None
     protocol: Optional[Protocol] = None
+    operation: Literal["Include", "Exclude"] = "Include"
+    direction: Literal["Inbound", "Outbound"] = "Inbound"
 
     @field_validator("src_port", "dst_port", mode="before")
     def validate_ports(cls, value):

@@ -1,6 +1,9 @@
 from pydantic import BaseModel, field_validator, model_validator
 from typing import Any, Optional, List, Dict, Tuple, Union, Generic, TypeVar
 
+from models.Filter import CaptureFilterRecord, PortRangeInt
+from packet.utils import BpfUtils
+
 T = TypeVar("T")
 
 
@@ -99,3 +102,35 @@ class TimeSeriesData(BaseModel):
     total_packets: int
     total_bytes: int
     time_range: TimeRange
+
+
+class NetworkInterfaces(BaseModel):
+    """Network interfaces DTO"""
+
+    interfaces: List[str] = []
+    selected: str
+
+
+class NetworkInterfacePost(BaseModel):
+    """Network interface post DTO"""
+
+    interface: str
+
+
+class FilterAll(BaseModel):
+    """Filter all DTO"""
+
+    filters: List[CaptureFilterRecord] = []
+
+
+class ProtocolPortMappingRuleRecord(BaseModel):
+    """Protocol mapping rule record DTO"""
+
+    protocol: str
+    ports: List[int]
+
+
+class ProtocolPortMappingRulesAll(BaseModel):
+    """Protocol mapping rules all DTO"""
+
+    rules: List[ProtocolPortMappingRuleRecord] = []

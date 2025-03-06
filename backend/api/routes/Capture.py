@@ -1,66 +1,44 @@
-from typing import List
+from typing import Optional
 from fastapi import APIRouter, Depends
 
-from models import CaptureFilterRecord
 from packet.PacketAnalyzer import PacketAnalyzer, AnalyzerSingleton
-from packet.utils.BpfUtils import BPFUtils
+from service.CaptureService import CaptureService
+from core.config import oauth2_scheme
 
-# TODO: add auth to this route
-router = APIRouter(prefix="/capture")
+router = APIRouter(prefix="/capture", tags=["capture"])
+capture_service = CaptureService()
 
 
-def get_packet_analyzer():
+def get_packet_analyzer() -> PacketAnalyzer:
     return AnalyzerSingleton.get_instance()
-
-
-@router.get("/")
-async def read_root():
-    return {"Hello": "World"}
 
 
 @router.post("/start")
 async def start_capture(
     analyzer: PacketAnalyzer = Depends(get_packet_analyzer),
+    token: str = Depends(oauth2_scheme),
 ):
-    if analyzer.is_running:
-        return {"status": "Capture already started"}
-    analyzer.start()
-    return {"status": "Capture started"}
+    """启动抓包分析 (Start packet capture)"""
+    if not capture_service.start_capture():
+        return {"status": "failed", "message": "Failed to start capture"}
+    return {"status": "success", "message": "Capture started"}
 
 
 @router.post("/stop")
-async def stop_capture(analyzer: PacketAnalyzer = Depends(get_packet_analyzer)):
-    if not analyzer.is_running:
-        return {"status": "Capture already stopped"}
-    analyzer.stop()
-    return {"status": "Capture stopped"}
-
-
-@router.get("/config/filter", response_model=List[CaptureFilterRecord])
-async def get_all_filter(analyzer: PacketAnalyzer = Depends(get_packet_analyzer)):
-    filter = analyzer._packet_producer.filter
-    if not filter:
-        return []
-    resp = BPFUtils.parse_filter_expression(filter)
-    return resp
-
-
-@router.post("/config/filter", response_model=List[CaptureFilterRecord])
-async def set_filter(
-    filter_records: List[CaptureFilterRecord],
+async def stop_capture(
     analyzer: PacketAnalyzer = Depends(get_packet_analyzer),
+    token: str = Depends(oauth2_scheme),
 ):
-    filter = BPFUtils.build_filter_expression(filter_records)
-    analyzer._packet_producer.apply_filter(filter)
-    return filter_records
+    """停止抓包分析 (Stop packet capture)"""
+    if not capture_service.stop_capture():
+        return {"status": "failed", "message": "Failed to stop capture"}
+    return {"status": "success", "message": "Capture stopped"}
 
 
 @router.get("/status")
-async def get_status(analyzer: PacketAnalyzer = Depends(get_packet_analyzer)):
-    return {
-        "running": analyzer.is_running,
-        "metrics": {
-            "consumer": analyzer._packet_consumer._metrics,
-            "queue": analyzer._double_buffer_queue.metrics,
-        },
-    }
+async def get_capture_status(
+    analyzer: PacketAnalyzer = Depends(get_packet_analyzer),
+    token: str = Depends(oauth2_scheme),
+):
+    """获取抓包状态 (Get capture status)"""
+    return {"status": "running" if capture_service.is_capturing() else "stopped"}

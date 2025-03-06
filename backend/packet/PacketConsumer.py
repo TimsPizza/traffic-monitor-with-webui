@@ -7,7 +7,7 @@ from typing import Any, Callable, List
 import scapy
 from scapy.all import Ether, IP, TCP
 
-from db.DatabaseOperations import DatabaseOperations
+from db.DatabaseOperations import DB_OPS, DatabaseOperations
 from core.config import ENV_CONFIG
 
 from packet.Packet import CapturedPacket, ProcessedPacket
@@ -30,7 +30,7 @@ class PacketConsumer:
         self.executor: ThreadPoolExecutor = None
         self._processor_queue: List[Callable[[Any, ProcessedPacket], None]] = []
 
-        self._db_ops = DatabaseOperations()
+        self._db_ops = DB_OPS
 
         self._min_batch_size = max(1, batch_size // 2)
         self._max_batch_size = batch_size * 8

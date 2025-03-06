@@ -12,8 +12,8 @@ class PacketCapturer:
     def __init__(
         self, interface: str, filter: Optional[str] = None, inbound_only: bool = True
     ):
-        self.interface = interface
-        if self.interface not in netifaces.interfaces():
+        self._interface = interface
+        if self._interface not in netifaces.interfaces():
             raise ValueError(f"Interface {self.interface} does not exist")
 
         self._pcap = None
@@ -21,7 +21,6 @@ class PacketCapturer:
         self._inbound_only = inbound_only
         self._inbound_filter = "inbound" if inbound_only else ""
         self._batch_size = 128  # Process packets in small batches
-        self._interface = interface
         self._stop_event = Event()
         self._stop_event.set()
         self._capture_thread: Thread = None
@@ -31,17 +30,10 @@ class PacketCapturer:
         if filter:
             self._cache_filter(filter)
 
-    def _cache_filter(self, filter: str) -> None:
-        """Cache packet filter before pcap object is initialized"""
-        self._filter = filter
-        self.logger.info(f"Filter cached: {filter}")
-
     def set_filter(self, filter: str) -> None:
         """Set packet filter while preserving inbound filter"""
-        if self._stop_event.is_set():
-            self._cache_filter(filter)
-            self.logger.info(f"Filter cached: {filter}")
-            return
+        self._filter = filter
+        self.logger.info(f"Filter cached: {filter}")
 
         # Combine user filter with inbound filter
         final_filter = filter
@@ -51,14 +43,25 @@ class PacketCapturer:
                 if filter
                 else self._inbound_filter
             )
+        if self._pcap:
+            self._pcap.setfilter(final_filter)
+            self.logger.info(f"Filter saved: {final_filter}")
+        else:
+            self.logger.info(f"Filter set to: {final_filter}")
 
-        self._pcap.setfilter(final_filter)
-        self.logger.info(f"Filter set to: {final_filter}")
+    def set_interface(self, interface: str) -> None:
+        """Set interface for packet capture"""
+        self._interface = interface
+        self.logger.info(f"Interface set to: {interface}")
+
+    def get_active_interface(self) -> str:
+        """Get active interface for packet capture"""
+        return self._interface
 
     def register_callback(self, callback: Callable[[bytes, float], None]) -> None:
         """Register callback for packet processing"""
         self._callback = callback
-        self.logger.debug(f"Callback registered:{callback}")
+        self.logger.debug(f"Callback registered: {callback}")
 
     def start(self) -> None:
         """Start packet capture in separate thread"""

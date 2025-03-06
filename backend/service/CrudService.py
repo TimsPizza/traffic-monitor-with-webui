@@ -1,6 +1,7 @@
 from collections import Counter
 from logging import Logger
 from typing import List, Type, Tuple, Optional, Dict, Any
+from service.ConfigService import CONFIG_SERVICE
 from core.config import ENV_CONFIG
 from models.Dtos import (
     FullPacket,
@@ -13,13 +14,35 @@ from models.Dtos import (
     TrafficSummary,
     TimeSeriesData,
 )
-from db.DatabaseOperations import DatabaseOperations
+from db.DatabaseOperations import DB_OPS
 
 
 class CrudService:
     def __init__(self):
-        self.db_ops = DatabaseOperations()
+        self.db_ops = DB_OPS
         self.logger = Logger(self.__class__.__name__, level=ENV_CONFIG.log_level)
+
+    @staticmethod
+    def _rewrite_protocol(self, packets: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """根据当前端口-协议映射规则重写数据包协议 (Rewrite packet protocols based on current port-protocol mapping rules)"""
+        try:
+            # 获取当前的端口-协议映射规则 (Get current port-protocol mapping rules)
+            rules = CONFIG_SERVICE.get_all_protocol_port_mapping_rules()
+            if not rules.rules:
+                return packets
+
+            # 创建端口到协议的映射字典 (Create port to protocol mapping dictionary)
+            port_protocol_map = {rule.port.port: rule.protocol for rule in rules.rules}
+
+            # 重写匹配的数据包的协议字段 (Rewrite protocol fields for matching packets)
+            for packet in packets:
+                if "dst_port" in packet and packet["dst_port"] in port_protocol_map:
+                    packet["protocol"] = port_protocol_map[packet["dst_port"]]
+
+            return packets
+        except Exception as e:
+            self.logger.error(f"Error rewriting protocols: {e}")
+            return packets
 
     def _build_paginated_response(
         self,

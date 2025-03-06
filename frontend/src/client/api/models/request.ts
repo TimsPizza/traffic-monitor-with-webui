@@ -40,10 +40,23 @@ export type TSignUpForm = {
   password: string;
 };
 
-export interface ICaptureFilterSetting {
+// 配置相关请求类型 (Configuration related request types)
+
+export interface IPortRange {
+  port: number;  // 1-65535
+}
+
+export interface IProtocolPortMappingRule {
+  protocol: string;
+  port: IPortRange;  // 修复：使用单个 IPortRange 而不是数组
+}
+
+export interface ICaptureFilter {
   src_ip?: string | null;
   dst_ip?: string | null;
-  src_port?: number[];
-  dst_port?: number[];
-  protocol?: "tcp" | "udp" | "icmp" | "all";
+  src_port?: number[] | null;
+  dst_port?: number[] | null;
+  protocol?: 'tcp' | 'udp' | 'icmp' | 'all' | null;
+  operation: 'Include' | 'Exclude';
+  direction: 'Inbound' | 'Outbound';
 }

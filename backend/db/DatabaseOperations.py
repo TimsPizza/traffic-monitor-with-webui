@@ -17,6 +17,7 @@ from models.Dtos import (
     TopSourceIP,
     TrafficSummary,
 )
+from models.Filter import CaptureFilterRecord
 
 
 class DatabaseOperations:
@@ -170,3 +171,6 @@ class DatabaseOperations:
     def close(self):
         """Close the MongoDB connection"""
         self.client.close()
+
+
+DB_OPS = DatabaseOperations()

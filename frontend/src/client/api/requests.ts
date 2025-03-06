@@ -1,3 +1,4 @@
+import { AxiosResponse } from "axios";
 import {
   IByDestinationPort,
   IByProtocol,
@@ -11,6 +12,8 @@ import {
   ITrafficSummary,
   TLoginForm,
   TSignUpForm,
+  ICaptureFilter,
+  IProtocolPortMappingRule,
 } from "../api/models/request";
 import {
   IByDestinationPortResponse,
@@ -24,6 +27,9 @@ import {
   ITimeSeriesResponse,
   ITrafficSummaryResponse,
   TAuthResponse,
+  IFilterAllResponse,
+  IProtocolPortMappingResponse,
+  INetworkInterfacesResponse,
 } from "../api/models/response";
 import { apiClient } from "./apiClient";
 
@@ -126,19 +132,58 @@ export class DataApi {
     });
   }
 
-  public static async getProtocolAnalysis(
-    config: IProtocolAnalysis,
-  ): Promise<IPaginatedResponse<IProtocolAnalysisResponse>> {
-    return apiClient.instance.get(`${DataApi.BASE_URL}/protocol-analysis`, {
-      params: cleanQueryParams(config),
-    });
-  }
-
   public static async getTopSourceIPs(
     config: IByTopSourceIps,
   ): Promise<IPaginatedResponse<IByTopSourceIpsResponse>> {
     return apiClient.instance.get(`${DataApi.BASE_URL}/top-source-ips`, {
       params: cleanQueryParams(config),
     });
+  }
+}
+
+export class ConfigApi {
+  private static BASE_URL = "/config";
+
+  // 网络接口管理 (Network interface management)
+  public static async getInterfaces(): Promise<
+    AxiosResponse<INetworkInterfacesResponse>
+  > {
+    return apiClient.instance.get(`${ConfigApi.BASE_URL}/interfaces`);
+  }
+
+  public static async setInterface(interfaceName: string): Promise<string> {
+    return apiClient.instance.post(`${ConfigApi.BASE_URL}/interfaces`, {
+      interface: interfaceName,
+    });
+  }
+
+  // 端口-协议映射规则管理 (Port-protocol mapping rules management)
+  public static async getRules(): Promise<AxiosResponse<IProtocolPortMappingResponse>> {
+    return apiClient.instance.get(`${ConfigApi.BASE_URL}/rules`);
+  }
+
+  public static async addOrUpdateRule(
+    rule: IProtocolPortMappingRule,
+  ): Promise<AxiosResponse<IProtocolPortMappingResponse>> {
+    return apiClient.instance.patch(`${ConfigApi.BASE_URL}/rules`, rule);
+  }
+
+  public static async deleteRule(
+    rule: IProtocolPortMappingRule,
+  ): Promise<AxiosResponse<IProtocolPortMappingResponse>> {
+    return apiClient.instance.delete(`${ConfigApi.BASE_URL}/rules`, {
+      data: rule,
+    });
+  }
+
+  // 过滤器管理 (Filter management)
+  public static async getFilters(): Promise<IFilterAllResponse> {
+    return apiClient.instance.get(`${ConfigApi.BASE_URL}/filter`);
+  }
+
+  public static async setFilters(
+    filters: ICaptureFilter[],
+  ): Promise<ICaptureFilter[]> {
+    return apiClient.instance.post(`${ConfigApi.BASE_URL}/filter`, filters);
   }
 }

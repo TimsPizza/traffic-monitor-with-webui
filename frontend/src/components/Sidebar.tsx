@@ -19,7 +19,7 @@ const Sidebar: React.FC<{
             key={item.path}
             to={item.path}
             className={({ isActive }) =>
-              `before:bg-tw-primary relative flex origin-center items-center justify-center rounded-lg p-2 text-blue-700 transition-transform duration-300 before:absolute before:left-0 before:top-1/2 before:h-7 before:w-12 before:-translate-x-[110%] before:-translate-y-1/2 before:rounded-md hover:bg-gray-200 ${
+              `relative flex origin-center items-center justify-center rounded-lg p-2 text-blue-700 transition-transform duration-300 before:absolute before:left-0 before:top-1/2 before:h-7 before:w-12 before:-translate-x-[110%] before:-translate-y-1/2 before:rounded-md before:bg-tw-primary hover:bg-gray-200 ${
                 isActive
                   ? "before:scale-y-100"
                   : "text-gray-700 before:scale-y-0"
@@ -27,8 +27,10 @@ const Sidebar: React.FC<{
             }
             onClick={() => setShouldSidebarCollapse(true)}
           >
-            <span className="bg-tw-primary mx-auto flex aspect-[4/3] w-12 items-center justify-center rounded-lg text-white ">
-              <i className={`bi ml-2 ${item.icon} text-md mx-auto text-xl scale-95`} />
+            <span className="mx-auto flex aspect-[4/3] w-12 items-center justify-center rounded-lg bg-tw-primary text-white">
+              <i
+                className={`bi ml-2 ${item.icon} text-md mx-auto scale-95 text-xl`}
+              />
             </span>
             <div
               className={`${shouldSidebarCollapse ? "w-0" : "ml-2 w-24"} origin-left overflow-hidden transition-all duration-200`}

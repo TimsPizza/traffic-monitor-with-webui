@@ -67,7 +67,7 @@ const Layout = () => {
         id="content-wrapper"
         className="flex w-full flex-1 flex-col overflow-auto"
       >
-        <header className="relative mt-1 min-h-[5%] p-1">
+        {/* <header className="relative mt-1 min-h-[5%] p-1">
           <div
             id="sidebar-toggle"
             className={`absolute left-0 top-1/2 z-50 h-8 w-8 -translate-y-1/2 translate-x-1/2 rounded-lg border border-gray-300 text-center transition-transform duration-300 ${shouldSidebarCollapse ? "" : "hidden"} lg:hidden`}
@@ -79,7 +79,7 @@ const Layout = () => {
             <i className={`bi bi-list text-xl`} />
           </div>
           <Header />
-        </header>
+        </header> */}
         <div id="layout-content-wrapper" className="flex-1 p-1">
           <Outlet />
         </div>

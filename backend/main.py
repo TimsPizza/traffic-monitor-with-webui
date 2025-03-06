@@ -18,6 +18,7 @@ async def life_span(app: FastAPI):
 
 app = FastAPI(lifespan=life_span)
 app.include_router(router)
+
 if ENV_CONFIG.cors_origins:
     app.add_middleware(
         CORSMiddleware,

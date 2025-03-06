@@ -96,14 +96,29 @@ export type TAuthResponse = {
   token_type: string;
 };
 
-export type TQueryResponses =
-  | ITimeSeriesResponse
-  | IProtocolDistributionResponse
-  | ITrafficSummaryResponse
-  | IByTopSourceIpsResponse
-  | IBySourceRegionResponse
-  | IByDestinationPortResponse
-  | IBySourceIPResponse
-  | IByTimeRangeResponse
-  | IByRegionResponse
-  | IByProtocolResponse;
+// 配置相关响应类型 (Configuration related response types)
+export interface IFilterAllResponse {
+  filters: Array<{
+    src_ip?: string | null;
+    dst_ip?: string | null;
+    src_port?: number[] | null;
+    dst_port?: number[] | null;
+    protocol?: "tcp" | "udp" | "icmp" | "all" | null;
+    operation: "Include" | "Exclude";
+    direction: "Inbound" | "Outbound";
+  }>;
+}
+
+export interface IProtocolPortMappingResponse {
+  rules: Array<{
+    protocol: string;
+    port: {
+      port: number;  // 1-65535
+    };
+  }>;
+}
+
+export interface INetworkInterfacesResponse {
+  interfaces: string[];
+  selected: string;
+};

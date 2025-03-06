@@ -1,5 +1,7 @@
-from threading import Event
+from threading import Event, Lock
+from typing import Dict, List
 
+from models.Dtos import ProtocolPortMappingRuleRecord
 from service.GeoIpService import GeoIPSingleton
 from core.config import ENV_CONFIG
 from .Processors import (
@@ -15,6 +17,7 @@ from .PacketConsumer import PacketConsumer
 from .PacketProducer import PacketProducer
 from .Packet import CapturedPacket
 from packet.utils.DoubleBufferQueue import DoubleBufferQueue
+import logging
 
 
 class PacketAnalyzer:
@@ -31,6 +34,11 @@ class PacketAnalyzer:
     ):
         self._stop_event = Event()
         self._stop_event.set()
+
+        # 用于同步访问规则映射 (For synchronizing access to rule mappings)
+        self._lock = Lock()
+
+        self.logger = logging.getLogger(self.__class__.__name__)
 
         GeoIPSingleton._load_instance()
 
@@ -52,9 +60,7 @@ class PacketAnalyzer:
             max_workers=consumer_max_workers,
             batch_size=consumer_batch_size,
         )
-        self._packet_producer.apply_filter(
-            "ip and not ether broadcast and not ether multicast"
-        )
+        self.set_filter("ip and not ether broadcast and not ether multicast")
         self._packet_consumer.add_processor(check_udp)
         self._packet_consumer.add_processor(check_tcp)
         self._packet_consumer.add_processor(check_src_ip_region)
@@ -62,6 +68,48 @@ class PacketAnalyzer:
         self._packet_consumer.add_processor(check_ssh_type)
         self._packet_consumer.add_processor(check_handshake)
         self._packet_consumer.add_processor(add_uuid)
+
+        # 端口-协议映射规则 (Port-Protocol mapping rules)
+        self._port_protocol_mapping: Dict[int, str] = {}
+
+    def set_interface(self, interface: str):
+        """设置抓包接口 (Set capture interface)"""
+        self._packet_producer.set_interface(interface)
+
+    def get_active_interface(self) -> str:
+        """获取当前活动的抓包接口 (Get current active capture interface)"""
+        return self._packet_producer.get_active_interface()
+
+    def get_filter(self) -> str:
+        """获取当前过滤器表达式 (Get current filter expression)"""
+        return self._packet_producer.filter
+
+    def set_filter(self, filter_expression: str):
+        """设置过滤器表达式 (Set filter expression)"""
+        try:
+            if not filter_expression:
+                return
+            return self._packet_producer.apply_filter(filter_expression)
+        except Exception as e:
+            self.logger.error(f"Error setting filter: {e}")
+
+    def set_rules(self, rules: List[ProtocolPortMappingRuleRecord]) -> bool:
+        """设置端口-协议映射规则 (Set port-protocol mapping rules)"""
+        try:
+            with self._lock:
+                self._port_protocol_mapping.clear()
+                for rule in rules:
+                    for port in rule.ports:
+                        self._port_protocol_mapping[port] = rule.protocol
+            return True
+        except Exception as e:
+            self.logger.error(f"Error setting rules: {e}")
+            return False
+
+    def get_protocol_for_port(self, port: int) -> str:
+        """获取指定端口的协议 (Get protocol for specified port)"""
+        with self._lock:
+            return self._port_protocol_mapping.get(port, "")
 
     def start(self):
         self._stop_event.clear()

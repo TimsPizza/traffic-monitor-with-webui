@@ -2,8 +2,8 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from pymongo import MongoClient
-from backend.core import CustomHttpException
-from backend.db.Client import MongoConnectionSingleton
+from core import CustomHttpException
+from db.Client import MongoConnectionSingleton
 from core.config import ENV_CONFIG
 
 # OAuth2 token

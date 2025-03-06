@@ -12,9 +12,9 @@ from models.Dtos import (
     PaginatedResponse,
 )
 from service.CrudService import CrudService
+from core.config import oauth2_scheme
 
 router = APIRouter(prefix="/query", tags=["query"])
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 crud_service = CrudService()
 

@@ -57,3 +57,10 @@ class PacketProducer:
 
     def _enqueue_packet(self, packet):
         self._buffer.enqueue(packet)
+
+    def set_interface(self, interface):
+        self._capturer.set_interface(interface)
+        self.logger.info(f"Interface set to {interface}")
+
+    def get_active_interface(self):
+        return self._capturer.get_active_interface()
