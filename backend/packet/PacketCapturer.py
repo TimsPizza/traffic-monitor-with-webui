@@ -82,7 +82,7 @@ class PacketCapturer:
         self._capture_thread = Thread(target=self._capture_loop)
         self._capture_thread.start()
         self.logger.info(
-            f"Capture started with filter: {self._pcap.filter}, listening on interface: {self.interface}"
+            f"Capture started with filter: {self._pcap.filter}, listening on interface: {self._interface}"
         )
 
     @property

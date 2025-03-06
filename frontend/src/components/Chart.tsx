@@ -286,7 +286,7 @@ const Chart: React.FC<ChartProps> = ({
         </div>
       )}
       {data.length === 0 ? (
-        <div className="min-h-[300px] flex-1 relative flex h-full w-full items-center justify-center">
+        <div className="min-h-[300px] dark:text-gray-50 flex-1 relative flex h-full w-full items-center justify-center">
           {placeholder}
         </div>
       ) : (

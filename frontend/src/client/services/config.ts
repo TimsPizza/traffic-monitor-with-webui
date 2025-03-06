@@ -5,7 +5,7 @@ import type {
   IProtocolPortMappingRule,
 } from "../api/models/request";
 import type {
-  IFilterAllResponse,
+  TFilterAllResponse,
   IProtocolPortMappingResponse,
   INetworkInterfacesResponse,
 } from "../api/models/response";
@@ -89,8 +89,14 @@ class ConfigService {
    * 获取所有过滤器
    * Get all filters
    */
-  async getFilters(): Promise<IFilterAllResponse> {
-    return await ConfigApi.getFilters();
+  async getFilters(): Promise<TFilterAllResponse> {
+    try {
+      const response = await ConfigApi.getFilters();
+      return response.data;
+    } catch (e) {
+      console.error("Failed to get filters:", e);
+      throw e as AxiosError;
+    }
   }
 
   /**
@@ -98,7 +104,13 @@ class ConfigService {
    * Set filters
    */
   async setFilters(filters: ICaptureFilter[]): Promise<ICaptureFilter[]> {
-    return await ConfigApi.setFilters(filters);
+    try {
+      const response = await ConfigApi.setFilters(filters);
+      return response.data;
+    } catch (e) {
+      console.error("Failed to set filters:", e);
+      throw e as AxiosError;
+    }
   }
 }
 

@@ -21,10 +21,11 @@ def _load_port_protocol_map() -> dict:
             return {}
         with open(CONFIG_PATH, "r") as f:
             config = yaml.safe_load(f) or {}
-            return {
-                rule["port"]["port"]: rule["protocol"]
-                for rule in config.get("rules", [])
-            }
+            resp = {}
+            for rule in config.get("rules", []):
+                for port in rule["ports"]:
+                    resp[port] = rule["protocol"]
+            return resp
     except Exception as e:
         logger.error(f"Error loading port-protocol mappings: {e}")
         return {}
@@ -208,9 +209,13 @@ def check_application_protocol(scapy_packet, packet: ProcessedPacket) -> None:
 
     # 先通过载荷检测 (First check by payload)
     for check_func, proto in protocol_checks:
-        if check_func(payload):
-            packet.protocol = proto
-            return
+        try:
+            if check_func(payload):
+                packet.protocol = proto
+                return
+        except struct.error:
+            # 如果载荷不足以解包出所需的字节数，则跳过当前协议检测
+            continue
 
     # 从配置文件加载端口映射 (Load port mappings from config)
     port_map = _load_port_protocol_map()

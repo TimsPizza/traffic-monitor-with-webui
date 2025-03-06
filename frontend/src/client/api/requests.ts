@@ -27,7 +27,7 @@ import {
   ITimeSeriesResponse,
   ITrafficSummaryResponse,
   TAuthResponse,
-  IFilterAllResponse,
+  TFilterAllResponse,
   IProtocolPortMappingResponse,
   INetworkInterfacesResponse,
 } from "../api/models/response";
@@ -177,13 +177,13 @@ export class ConfigApi {
   }
 
   // 过滤器管理 (Filter management)
-  public static async getFilters(): Promise<IFilterAllResponse> {
+  public static async getFilters(): Promise<AxiosResponse<TFilterAllResponse>> {
     return apiClient.instance.get(`${ConfigApi.BASE_URL}/filter`);
   }
 
-  public static async setFilters(
-    filters: ICaptureFilter[],
-  ): Promise<ICaptureFilter[]> {
-    return apiClient.instance.post(`${ConfigApi.BASE_URL}/filter`, filters);
-  }
+public static async setFilters(
+  filters: ICaptureFilter[],
+): Promise<AxiosResponse<ICaptureFilter[]>> {
+  return apiClient.instance.post(`${ConfigApi.BASE_URL}/filter`, filters);
+}
 }

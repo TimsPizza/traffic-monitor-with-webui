@@ -9,40 +9,30 @@ import {
 } from "react-icons/fi";
 import { configService } from "../../client/services/config";
 import type { ICaptureFilter } from "../../client/api/models/request";
-import type { IFilterAllResponse } from "../../client/api/models/response";
+import type { TFilterAllResponse } from "../../client/api/models/response";
+import { useQuery } from "react-query";
 
 const FilterRulesCard: React.FC = () => {
   const [filters, setFilters] = useState<ICaptureFilter[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingFilter, setEditingFilter] = useState<ICaptureFilter | null>(
     null,
   );
   const [newFilter, setNewFilter] = useState<ICaptureFilter | null>(null);
-
-  useEffect(() => {
-    loadFilters();
-  }, []);
-
-  const loadFilters = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await configService.getFilters();
-      if (!response?.filters) {
-        setError("Failed to load filters");
-        setFilters([]);
-        return;
-      }
-      setFilters(response.filters);
-    } catch (error) {
+  const query = useQuery({
+    queryKey: "filters",
+    queryFn: configService.getFilters,
+    onSuccess: (data: TFilterAllResponse) => {
+      setFilters(data);
+    },
+    onError: (error) => {
       console.error("Failed to load filters:", error);
       setError("Failed to load filters");
-      setFilters([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    refetchInterval: false,
+    retry: 3,
+  });
+  useEffect(() => {}, []);
 
   const handleAddFilter = () => {
     setNewFilter({
@@ -74,7 +64,7 @@ const FilterRulesCard: React.FC = () => {
     onSave: (filter: ICaptureFilter) => void;
     onCancel: () => void;
   }> = ({ filter, onSave, onCancel }) => (
-    <div className="space-y-4 rounded-lg bg-gray-50 p-4 ">
+    <div className="space-y-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-700">
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -105,12 +95,12 @@ const FilterRulesCard: React.FC = () => {
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label className="mb-1 block text-sm font-medium dark:text-gray-300">
             Source Ports
           </label>
           <input
             type="text"
-            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
             value={filter.src_port?.join(", ") || ""}
             onChange={(e) => {
               const ports = e.target.value
@@ -123,12 +113,12 @@ const FilterRulesCard: React.FC = () => {
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label className="mb-1 block text-sm font-medium dark:bg-gray-700 dark:text-gray-300">
             Destination Ports
           </label>
           <input
             type="text"
-            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
             value={filter.dst_port?.join(", ") || ""}
             onChange={(e) => {
               const ports = e.target.value
@@ -143,11 +133,11 @@ const FilterRulesCard: React.FC = () => {
       </div>
       <div className="grid grid-cols-3 gap-4">
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label className="mb-1 block text-sm font-medium dark:bg-gray-700 dark:text-gray-300">
             Protocol
           </label>
           <select
-            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
             value={filter.protocol || ""}
             onChange={(e) =>
               onSave({
@@ -169,7 +159,7 @@ const FilterRulesCard: React.FC = () => {
             Operation
           </label>
           <select
-            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
             value={filter.operation}
             onChange={(e) =>
               onSave({
@@ -187,7 +177,7 @@ const FilterRulesCard: React.FC = () => {
             Direction
           </label>
           <select
-            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
             value={filter.direction}
             onChange={(e) =>
               onSave({
@@ -213,13 +203,13 @@ const FilterRulesCard: React.FC = () => {
               : [...filters, filter];
             handleSaveFilters(updatedFilters);
           }}
-          className="rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+          className="rounded-lg bg-blue-500 px-4 py-2 text-gray-50 hover:bg-blue-600"
         >
           <FiSave className="h-5 w-5" />
         </button>
         <button
           onClick={onCancel}
-          className="rounded-lg bg-gray-500 px-4 py-2 text-white hover:bg-gray-600"
+          className="rounded-lg bg-gray-500 px-4 py-2 text-gray-50 hover:bg-gray-600"
         >
           <FiX className="h-5 w-5" />
         </button>
@@ -232,22 +222,22 @@ const FilterRulesCard: React.FC = () => {
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-green-500 to-green-600">
-            <FiFilter className="h-6 w-6 text-white" />
+            <FiFilter className="h-6 w-6 text-gray-50" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-50">
             Capture Filters
           </h3>
         </div>
         <button
           onClick={handleAddFilter}
-          className="flex items-center gap-2 rounded-lg bg-green-500 px-4 py-2 text-white hover:bg-green-600"
+          className="flex items-center gap-2 rounded-lg bg-green-500 px-4 py-2 text-gray-50 hover:bg-green-600"
         >
           <FiPlus className="h-5 w-5" />
           Add Filter
         </button>
       </div>
 
-      {loading ? (
+      {query.isLoading ? (
         <div className="animate-pulse space-y-3">
           {[1, 2].map((i) => (
             <div
@@ -256,7 +246,7 @@ const FilterRulesCard: React.FC = () => {
             />
           ))}
         </div>
-      ) : error ? (
+      ) : query.isError ? (
         <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-600 dark:border-red-900 dark:bg-red-900/20 dark:text-red-400">
           {error}
         </div>
@@ -288,12 +278,12 @@ const FilterRulesCard: React.FC = () => {
                 className="rounded-lg bg-gray-50 p-4 dark:bg-gray-700"
               >
                 <div className="flex items-center justify-between">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-4 gap-4">
                     <div>
                       <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                         Source:
                       </span>
-                      <span className="ml-2 text-gray-900 dark:text-white">
+                      <span className="ml-2 text-gray-900 dark:text-gray-50">
                         {filter.src_ip || "Any IP"}
                         {filter.src_port
                           ? ` (Ports: ${filter.src_port.join(", ")})`
@@ -304,7 +294,7 @@ const FilterRulesCard: React.FC = () => {
                       <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                         Destination:
                       </span>
-                      <span className="ml-2 text-gray-900 dark:text-white">
+                      <span className="ml-2 text-gray-900 dark:text-gray-50">
                         {filter.dst_ip || "Any IP"}
                         {filter.dst_port
                           ? ` (Ports: ${filter.dst_port.join(", ")})`
@@ -315,7 +305,7 @@ const FilterRulesCard: React.FC = () => {
                       <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                         Protocol:
                       </span>
-                      <span className="ml-2 text-gray-900 dark:text-white">
+                      <span className="ml-2 text-gray-900 dark:text-gray-300">
                         {filter.protocol || "Any"}
                       </span>
                     </div>
@@ -323,7 +313,7 @@ const FilterRulesCard: React.FC = () => {
                       <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                         Rule:
                       </span>
-                      <span className="ml-2 text-gray-900 dark:text-white">
+                      <span className="ml-2 text-gray-900 dark:text-gray-300">
                         {filter.operation} {filter.direction} traffic
                       </span>
                     </div>
