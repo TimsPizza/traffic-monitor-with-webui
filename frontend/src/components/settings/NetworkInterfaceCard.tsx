@@ -43,7 +43,7 @@ const NetworkInterfaceCard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-48 rounded-xl bg-white p-6 shadow-lg transition-all duration-300 hover:shadow-xl dark:bg-gray-800">
+    <div className="min-h-48 rounded-xl bg-gray-50 p-6 shadow-lg transition-all duration-300 hover:shadow-xl dark:!bg-gray-800">
       <div className="mb-4 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600">
           <FiWifi className="h-6 w-6 text-white" />
@@ -66,7 +66,7 @@ const NetworkInterfaceCard: React.FC = () => {
           <select
             value={selectedInterface}
             onChange={(e) => handleInterfaceChange(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-gray-700 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-gray-700 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
           >
             {interfaces.map((iface) => (
               <option key={iface} value={iface}>

@@ -41,7 +41,7 @@ const Card: React.FC<ICardProps> = ({
   };
 
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-xl bg-white p-6 shadow-lg transition-all duration-300 hover:shadow-xl dark:bg-gray-800">
+    <div className="relative h-full w-full overflow-hidden rounded-xl bg-white p-6 shadow-lg transition-all duration-300 hover:shadow-xl dark:!bg-gray-800">
       {/* Decorative gradient element */}
       <div
         className={`absolute -right-4 -top-4 h-24 w-24 rotate-12 rounded-full bg-gradient-to-br ${color} opacity-10`}

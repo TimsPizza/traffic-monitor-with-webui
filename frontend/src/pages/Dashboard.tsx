@@ -57,7 +57,10 @@ const timeSeriesQueryParams = {
   },
 };
 
-const calculateTrend = (current?: number, previous?: number): number | undefined => {
+const calculateTrend = (
+  current?: number,
+  previous?: number,
+): number | undefined => {
   if (current === undefined || previous === undefined || previous === 0) {
     return undefined;
   }
@@ -72,16 +75,16 @@ interface IProtocolStats {
 
 const getProtocolStats = (
   protocol: string,
-  data: any
+  data: any,
 ): IProtocolStats | null => {
   const record = getProtocolDistributionRecordByProtocol(protocol, data);
   if (!record) return null;
-  
+
   const rec = bytesToSize(record.total_bytes);
   return {
     packets: record.packet_count,
     total: `${rec.size} ${rec.unit}`,
-    bytes: record.total_bytes
+    bytes: record.total_bytes,
   };
 };
 
@@ -93,7 +96,7 @@ const buildCardDataByProtocolName = (
   if (!currentStats) {
     return {
       packets: 0,
-      total: '0 B',
+      total: "0 B",
     };
   }
 
@@ -131,18 +134,19 @@ const Dashboard = () => {
     if (!currentDayQuery.data) return null;
 
     const protocols = ["HTTPS", "HTTP", "SSH", "Unknown"] as const;
-    const result: Record<typeof protocols[number], ICardData["data"]> = {} as any;
+    const result: Record<(typeof protocols)[number], ICardData["data"]> =
+      {} as any;
 
-    protocols.forEach(protocol => {
+    protocols.forEach((protocol) => {
       const currentStats = getProtocolStats(protocol, currentDayQuery.data);
-      const previousStats = previousDayQuery.data ? 
-        getProtocolStats(protocol, previousDayQuery.data) : 
-        null;
+      const previousStats = previousDayQuery.data
+        ? getProtocolStats(protocol, previousDayQuery.data)
+        : null;
 
       result[protocol] = buildCardDataByProtocolName(
         protocol,
         currentStats,
-        previousStats
+        previousStats,
       );
     });
 
@@ -168,7 +172,8 @@ const Dashboard = () => {
   }, [timeSeriesQuery.data]);
 
   const pieChartData = useMemo(() => {
-    if (!currentDayQuery.data) return [];
+    if (!currentDayQuery.data || currentDayQuery.data.length === 0) return [];
+    console.log(currentDayQuery.data);
     const data = currentDayQuery.data as IProtocolDistributionResponseRecord;
     const resp: TPieData[] = [];
     const keys = data.distribution.map((item) => item.protocol);
@@ -182,13 +187,20 @@ const Dashboard = () => {
   }, [currentDayQuery.data]);
 
   return (
-    <div id="dashboard-wrapper" className="mx-8 h-full rounded-md">
+    <div id="dashboard-wrapper" className="mx-8 h-full rounded-md ">
       <Row className="mt-2 px-2">
-        <Col md={12} lg={6} className="mb-2  p-4">
+        <Col md={12} lg={6} className="mb-2 p-4">
           <Chart
             chartType={EChartType.SMOOTH_LINE}
             title="7 Days Traffic Summary"
             data={lineChartData ?? []}
+            placeholder={
+              currentDayQuery.isLoading ? (
+                <span>Loading...</span>
+              ) : (
+                <span>No data</span>
+              )
+            }
             style={{
               showXAxis: true,
               showYAxis: true,
@@ -205,9 +217,16 @@ const Dashboard = () => {
         <Col md={12} lg={6} className="mb-2 p-4">
           <Chart
             chartType={EChartType.RING}
-            title="Ditribution of Protocols"
+            title="Ditribution of Protocols (24h)"
             data={pieChartData}
             colorPalette={DEFAULT_COLOR_PALETTES[3]}
+            placeholder={
+              currentDayQuery.isLoading ? (
+                <span className="text-xl">Loading...</span>
+              ) : (
+                <span className="text-xl">No recent data</span>
+              )
+            }
             style={{
               showXAxis: true,
               showYAxis: true,
@@ -227,8 +246,9 @@ const Dashboard = () => {
                 title="HTTPS"
                 color="from-emerald-500 to-emerald-600"
                 data={{
-                  loading: currentDayQuery.isLoading || previousDayQuery.isLoading,
-                  data: cardData?.HTTPS ?? { packets: 0, total: '0 B' }
+                  loading:
+                    currentDayQuery.isLoading || previousDayQuery.isLoading,
+                  data: cardData?.HTTPS ?? { packets: 0, total: "0 B" },
                 }}
               />
             </Col>
@@ -237,8 +257,9 @@ const Dashboard = () => {
                 title="HTTP"
                 color="from-blue-500 to-blue-600"
                 data={{
-                  loading: currentDayQuery.isLoading || previousDayQuery.isLoading,
-                  data: cardData?.HTTP ?? { packets: 0, total: '0 B' }
+                  loading:
+                    currentDayQuery.isLoading || previousDayQuery.isLoading,
+                  data: cardData?.HTTP ?? { packets: 0, total: "0 B" },
                 }}
               />
             </Col>
@@ -247,18 +268,20 @@ const Dashboard = () => {
                 title="SSH"
                 color="from-violet-500 to-violet-600"
                 data={{
-                  loading: currentDayQuery.isLoading || previousDayQuery.isLoading,
-                  data: cardData?.SSH ?? { packets: 0, total: '0 B' }
+                  loading:
+                    currentDayQuery.isLoading || previousDayQuery.isLoading,
+                  data: cardData?.SSH ?? { packets: 0, total: "0 B" },
                 }}
               />
             </Col>
-            <Col lg={4} className="h-full mt-4">
+            <Col lg={4} className="mt-4 h-full">
               <Card
                 title="Unknown"
                 color="from-gray-500 to-gray-600"
                 data={{
-                  loading: currentDayQuery.isLoading || previousDayQuery.isLoading,
-                  data: cardData?.Unknown ?? { packets: 0, total: '0 B' }
+                  loading:
+                    currentDayQuery.isLoading || previousDayQuery.isLoading,
+                  data: cardData?.Unknown ?? { packets: 0, total: "0 B" },
                 }}
               />
             </Col>

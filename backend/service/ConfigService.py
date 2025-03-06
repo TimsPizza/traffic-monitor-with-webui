@@ -115,7 +115,7 @@ class ConfigService:
                 for r in rules:
                     if r["protocol"] != rule.protocol:
                         continue
-                    r["ports"] = list(set(r["ports"]) | set(rule.ports))
+                    r["ports"] = list(set(rule.ports))
                     break
             config["rules"] = rules
 

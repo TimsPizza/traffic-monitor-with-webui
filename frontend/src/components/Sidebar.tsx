@@ -12,7 +12,7 @@ const Sidebar: React.FC<{
     { path: "/reports", icon: "bi-file-earmark-text-fill", label: "Reports" },
   ];
   return (
-    <div className={`h-full bg-container-light`}>
+    <div className={`h-full`}>
       <div className="flex h-[92%] flex-col space-y-1 p-2">
         {navItems.map((item) => (
           <NavLink
@@ -33,7 +33,7 @@ const Sidebar: React.FC<{
               />
             </span>
             <div
-              className={`${shouldSidebarCollapse ? "w-0" : "ml-2 w-24"} origin-left overflow-hidden transition-all duration-200`}
+              className={`${shouldSidebarCollapse ? "w-0" : "ml-5 w-24"} origin-left overflow-hidden transition-all duration-200`}
             >
               <span>{item.label}</span>
             </div>

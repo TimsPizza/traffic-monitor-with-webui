@@ -15,6 +15,9 @@ export const getProtocolDistributionRecordByProtocol = (
   obj: IProtocolDistributionResponseRecord,
 ) => {
   const dataArr = obj["distribution"];
+  if (!dataArr) {
+    return null;
+  }
   for (const item of dataArr) {
     if (item.protocol === key) {
       return item;

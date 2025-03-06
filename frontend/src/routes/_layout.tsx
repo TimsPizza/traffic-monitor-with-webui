@@ -34,7 +34,7 @@ const Layout = () => {
   return (
     <div
       id="layout"
-      className="relative flex min-h-screen flex-row bg-bg-light"
+      className="relative flex min-h-screen flex-row bg-bg-light dark:!bg-gray-900"
     >
       <div
         id="mobile-overlay"
@@ -47,12 +47,12 @@ const Layout = () => {
       <div
         id="sidebar-wrapper"
         ref={sidebarRef}
-        className={`fixed my-2 mt-0 h-screen mx-1 overflow-hidden bg-container-light transition-transform duration-200 ease-linear lg:static lg:h-full lg:translate-x-0`}
+        className={`fixed mx-1 my-2 mt-0 h-screen overflow-hidden dark:!bg-gray-800 transition-transform duration-200 ease-linear lg:static lg:h-full lg:translate-x-0`}
       >
-        <div className="w-full block">
+        <div className="block w-full">
           <button
             id="sidebar-toggler"
-            className={`bi bi-justify-left ml-6 scale-[1.2] p-2 text-xl block`}
+            className={`bi bi-justify-left ml-6 block scale-[1.2] p-2 text-xl dark:text-white`}
             onClick={toggleSidebarCollapse}
           />
         </div>

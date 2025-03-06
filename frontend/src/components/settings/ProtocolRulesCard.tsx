@@ -1,5 +1,13 @@
-import React, { useState } from "react";
-import { FiList, FiPlus, FiEdit2, FiTrash2, FiSave, FiX } from "react-icons/fi";
+import React, { useState, useMemo } from "react";
+import {
+  FiList,
+  FiPlus,
+  FiEdit2,
+  FiTrash2,
+  FiSave,
+  FiX,
+  FiSearch,
+} from "react-icons/fi";
 import { configService } from "../../client/services/config";
 import type { IProtocolPortMappingRule } from "../../client/api/models/request";
 import { useMutation, useQuery } from "react-query";
@@ -16,17 +24,17 @@ const RuleEditor: React.FC<{
   onChange: (rule: IEditingRule) => void;
 }> = ({ rule, onSave, onCancel, onChange }) => {
   return (
-    <div className="flex items-center gap-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-700">
+    <div className="flex items-center gap-4 rounded-lg bg-gray-50 p-4 dark:!bg-gray-800">
       <input
         type="text"
-        className="w-40 rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
+        className="w-40 rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 dark:text-gray-50 dark:border-gray-600 dark:bg-gray-800"
         value={rule.portsString}
         onChange={(e) => onChange({ ...rule, portsString: e.target.value })}
         placeholder="e.g. 80, 443"
       />
       <input
         type="text"
-        className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
+        className="flex-1 rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 dark:text-gray-50 dark:border-gray-600 dark:bg-gray-800"
         value={rule.protocol}
         onChange={(e) => onChange({ ...rule, protocol: e.target.value })}
         placeholder="e.g. HTTP, HTTPS"
@@ -50,13 +58,13 @@ const RuleEditor: React.FC<{
 const ProtocolRulesCard: React.FC = () => {
   const [rules, setRules] = useState<IProtocolPortMappingRule[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [editingRule, setEditingRule] = useState<IProtocolPortMappingRule | null>(
-    null
-  );
+  const [editingRule, setEditingRule] =
+    useState<IProtocolPortMappingRule | null>(null);
   const [editingRuleState, setEditingRuleState] = useState<IEditingRule | null>(
-    null
+    null,
   );
   const [newRule, setNewRule] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
   const query = useQuery({
     queryKey: "rules",
@@ -71,6 +79,16 @@ const ProtocolRulesCard: React.FC = () => {
     refetchInterval: false,
     retry: 3,
   });
+
+  const filteredRules = useMemo(() => {
+    if (!searchTerm) return rules;
+    const term = searchTerm.toLowerCase();
+    return rules.filter(
+      (rule) =>
+        rule.protocol.toLowerCase().includes(term) ||
+        rule.ports.some((port) => port.toString().includes(term)),
+    );
+  }, [rules, searchTerm]);
 
   const mutationAdd = useMutation({
     mutationKey: "addOrUpdateRule",
@@ -152,7 +170,7 @@ const ProtocolRulesCard: React.FC = () => {
   };
 
   return (
-    <div className="flex h-48 flex-col rounded-xl bg-white p-6 shadow-lg transition-all duration-300 hover:shadow-xl dark:bg-gray-800">
+    <div className="flex h-48 flex-col rounded-xl bg-gray-50 p-6 shadow-lg transition-all duration-300 hover:shadow-xl dark:bg-gray-800">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-purple-600">
@@ -162,13 +180,25 @@ const ProtocolRulesCard: React.FC = () => {
             Protocol-Port Rules
           </h3>
         </div>
-        <button
-          onClick={handleAddRule}
-          className="flex items-center gap-2 rounded-lg bg-purple-500 px-4 py-2 text-white hover:bg-purple-600"
-        >
-          <FiPlus className="h-5 w-5" />
-          Add Rule
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search rules..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-48 rounded-lg border border-gray-200 bg-gray-50 py-2 pl-8 pr-3 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-50"
+            />
+            <FiSearch className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+          </div>
+          <button
+            onClick={handleAddRule}
+            className="flex items-center gap-2 rounded-lg bg-purple-500 px-4 py-2 text-white hover:bg-purple-600"
+          >
+            <FiPlus className="h-5 w-5" />
+            Add Rule
+          </button>
+        </div>
       </div>
 
       {query.isLoading ? (
@@ -197,53 +227,65 @@ const ProtocolRulesCard: React.FC = () => {
               onChange={handleRuleChange}
             />
           )}
-          {rules.map((rule) =>
-            editingRule?.protocol === rule.protocol &&
-            JSON.stringify(editingRule.ports) === JSON.stringify(rule.ports) ? (
-              <RuleEditor
-                key={`${rule.protocol}-${rule.ports.join(",")}`}
-                rule={editingRuleState || { protocol: rule.protocol, portsString: rule.ports.join(", ") }}
-                onSave={handleSaveRule}
-                onCancel={() => {
-                  setEditingRule(null);
-                  setEditingRuleState(null);
-                }}
-                onChange={handleRuleChange}
-              />
-            ) : (
-              <div
-                key={`${rule.protocol}-${rule.ports.join(",")}`}
-                className="flex items-center justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-700"
-              >
-                <div className="flex items-center gap-4">
-                  <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    Ports:
-                  </span>
-                  <span className="font-mono text-gray-900 dark:text-white">
-                    {rule.ports.join(", ")}
-                  </span>
-                  <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    Protocol:
-                  </span>
-                  <span className="font-mono text-gray-900 dark:text-white">
-                    {rule.protocol}
-                  </span>
+          {filteredRules.length === 0 ? (
+            <div className="py-4 text-center text-gray-500">
+              {searchTerm ? "No matching rules found" : "No rules added yet"}
+            </div>
+          ) : (
+            filteredRules.map((rule) =>
+              editingRule?.protocol === rule.protocol &&
+              JSON.stringify(editingRule.ports) ===
+                JSON.stringify(rule.ports) ? (
+                <RuleEditor
+                  key={`${rule.protocol}-${rule.ports.join(",")}`}
+                  rule={
+                    editingRuleState || {
+                      protocol: rule.protocol,
+                      portsString: rule.ports.join(", "),
+                    }
+                  }
+                  onSave={handleSaveRule}
+                  onCancel={() => {
+                    setEditingRule(null);
+                    setEditingRuleState(null);
+                  }}
+                  onChange={handleRuleChange}
+                />
+              ) : (
+                <div
+                  key={`${rule.protocol}-${rule.ports.join(",")}`}
+                  className="flex items-center justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-700"
+                >
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Ports:
+                    </span>
+                    <span className="font-mono text-gray-900 dark:text-white">
+                      {rule.ports.join(", ")}
+                    </span>
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Protocol:
+                    </span>
+                    <span className="font-mono text-gray-900 dark:text-white">
+                      {rule.protocol}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleEditRule(rule)}
+                      className="rounded-lg p-2 text-gray-500 hover:bg-gray-200 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-gray-200"
+                    >
+                      <FiEdit2 className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteRule(rule)}
+                      className="rounded-lg p-2 text-red-500 hover:bg-red-100 hover:text-red-700 dark:hover:bg-red-900"
+                    >
+                      <FiTrash2 className="h-5 w-5" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleEditRule(rule)}
-                    className="rounded-lg p-2 text-gray-500 hover:bg-gray-200 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-gray-200"
-                  >
-                    <FiEdit2 className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteRule(rule)}
-                    className="rounded-lg p-2 text-red-500 hover:bg-red-100 hover:text-red-700 dark:hover:bg-red-900"
-                  >
-                    <FiTrash2 className="h-5 w-5" />
-                  </button>
-                </div>
-              </div>
+              ),
             )
           )}
         </div>

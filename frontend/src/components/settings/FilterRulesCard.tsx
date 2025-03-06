@@ -74,7 +74,7 @@ const FilterRulesCard: React.FC = () => {
     onSave: (filter: ICaptureFilter) => void;
     onCancel: () => void;
   }> = ({ filter, onSave, onCancel }) => (
-    <div className="space-y-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-700">
+    <div className="space-y-4 rounded-lg bg-gray-50 p-4 ">
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -82,7 +82,7 @@ const FilterRulesCard: React.FC = () => {
           </label>
           <input
             type="text"
-            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
+            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
             value={filter.src_ip || ""}
             onChange={(e) =>
               onSave({ ...filter, src_ip: e.target.value || null })
@@ -96,7 +96,7 @@ const FilterRulesCard: React.FC = () => {
           </label>
           <input
             type="text"
-            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
+            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
             value={filter.dst_ip || ""}
             onChange={(e) =>
               onSave({ ...filter, dst_ip: e.target.value || null })
@@ -228,7 +228,7 @@ const FilterRulesCard: React.FC = () => {
   );
 
   return (
-    <div className="rounded-xl bg-white p-6 shadow-lg transition-all duration-300 hover:shadow-xl dark:bg-gray-800">
+    <div className="rounded-xl bg-gray-50 p-6 shadow-lg transition-all duration-300 hover:shadow-xl dark:bg-gray-800">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-green-500 to-green-600">

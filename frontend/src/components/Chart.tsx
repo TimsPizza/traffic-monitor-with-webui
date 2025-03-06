@@ -50,6 +50,7 @@ export interface ChartProps {
   style?: ChartStyleOptions;
   dataOptions?: ChartDataOptions;
   className?: string;
+  placeholder?: React.ReactNode;
 }
 
 const defaultStyleOptions: ChartStyleOptions = {
@@ -78,6 +79,7 @@ const Chart: React.FC<ChartProps> = ({
   style = defaultStyleOptions,
   dataOptions = defaultDataOptions,
   className = "",
+  placeholder,
 }) => {
   // 配色方案
   const titleColor = colorPalette[0];
@@ -173,7 +175,6 @@ const Chart: React.FC<ChartProps> = ({
         {finalStyle.showTooltip && (
           <Tooltip
             contentStyle={tooltipStyle}
-            
             // formatter={(value) => unix2DateString(value)}
             itemStyle={{ color: "#666" }}
           />
@@ -272,7 +273,7 @@ const Chart: React.FC<ChartProps> = ({
 
   return (
     <div
-      className={`flex h-full w-full flex-col rounded-xl border border-gray-100/20 bg-white/50 shadow-lg backdrop-blur-sm transition-all duration-300 hover:shadow-xl ${className}`}
+      className={`flex h-full w-full flex-col rounded-xl border border-gray-100/20 bg-white/50 dark:!bg-gray-800 shadow-lg backdrop-blur-sm transition-all duration-300 hover:shadow-xl ${className}`}
     >
       {title && (
         <div className="top-0 border-b border-gray-100/20 px-4 py-2">
@@ -284,16 +285,22 @@ const Chart: React.FC<ChartProps> = ({
           </h2>
         </div>
       )}
-      <div className="relative h-full w-full flex-1">
-        <ResponsiveContainer
-          width="100%"
-          height="100%"
-          minHeight={300}
-          debounce={50}
-        >
-          {renderChart() || <>undefined</>}
-        </ResponsiveContainer>
-      </div>
+      {data.length === 0 ? (
+        <div className="min-h-[300px] flex-1 relative flex h-full w-full items-center justify-center">
+          {placeholder}
+        </div>
+      ) : (
+        <div className="relative h-full w-full flex-1">
+          <ResponsiveContainer
+            width="100%"
+            height="100%"
+            minHeight={300}
+            debounce={50}
+          >
+            {renderChart() || <>undefined</>}
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   );
 };

@@ -5,7 +5,7 @@
         110], protocol: POP3}, {ports: [143], protocol: IMAP}, {ports: [993], protocol: IMAPS},
     {ports: [995], protocol: POP3S}, {ports: [3306], protocol: MySQL}, {ports: [5432],
       protocol: PostgreSQL}, {ports: [27017], protocol: MongoDB}, {ports: [6379],
-      protocol: Redis}, {ports: [22, 1, 2, 10], protocol: SSH}, {ports: [3389], protocol: RDP},
+      protocol: Redis}, {ports: [1026, 22], protocol: SSH}, {ports: [3389], protocol: RDP},
     {ports: [5900], protocol: VNC}, {ports: [445], protocol: SMB}, {ports: [548],
       protocol: AFP}, {ports: [873], protocol: Rsync}, {ports: [389], protocol: LDAP},
     {ports: [636], protocol: LDAPS}, {ports: [53], protocol: DNS}, {ports: [67, 68],
