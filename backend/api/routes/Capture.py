@@ -41,4 +41,10 @@ async def get_capture_status(
     token: str = Depends(oauth2_scheme),
 ):
     """获取抓包状态 (Get capture status)"""
-    return {"status": "running" if capture_service.is_capturing() else "stopped"}
+    return {
+        "running": analyzer.is_running,
+        "metrics": {
+            "consumer": analyzer._packet_consumer._metrics,
+            "queue": analyzer._double_buffer_queue.metrics,
+        },
+    }
