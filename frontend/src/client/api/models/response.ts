@@ -112,13 +112,11 @@ export interface IFilterAllResponse {
 export interface IProtocolPortMappingResponse {
   rules: Array<{
     protocol: string;
-    port: {
-      port: number;  // 1-65535
-    };
+    ports: number[];  // 修改为直接的端口数组
   }>;
 }
 
 export interface INetworkInterfacesResponse {
   interfaces: string[];
   selected: string;
-};
+}

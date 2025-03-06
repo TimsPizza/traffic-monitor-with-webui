@@ -43,7 +43,7 @@ const NetworkInterfaceCard: React.FC = () => {
   };
 
   return (
-    <div className="rounded-xl bg-white p-6 shadow-lg transition-all min-h-48 duration-300 hover:shadow-xl dark:bg-gray-800">
+    <div className="min-h-48 rounded-xl bg-white p-6 shadow-lg transition-all duration-300 hover:shadow-xl dark:bg-gray-800">
       <div className="mb-4 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600">
           <FiWifi className="h-6 w-6 text-white" />

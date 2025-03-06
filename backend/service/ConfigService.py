@@ -140,9 +140,7 @@ class ConfigService:
         """移除指定的端口映射规则 (Remove specified port mapping rule)"""
         try:
             self.logger.info(f"Removing rule: {rule}")
-            print(f"Removing rule: {rule}")
             config = self._load_config()
-            print(f"Config: {config}")
             rules: List[ProtocolPortMappingRuleRecord] = config.get("rules", [])
 
             # 删除规则 (Remove rule)
@@ -154,7 +152,6 @@ class ConfigService:
                     else:
                         r["ports"] = list(set(r["ports"]) - set(rule.ports))
                         break
-            print(f"new rules: {rules}")
             config["rules"] = rules
 
             # 保存到配置文件 (Save to config file)

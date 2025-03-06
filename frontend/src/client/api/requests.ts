@@ -165,7 +165,7 @@ export class ConfigApi {
   public static async addOrUpdateRule(
     rule: IProtocolPortMappingRule,
   ): Promise<AxiosResponse<IProtocolPortMappingResponse>> {
-    return apiClient.instance.patch(`${ConfigApi.BASE_URL}/rules`, rule);
+    return apiClient.instance.post(`${ConfigApi.BASE_URL}/rules`, rule);
   }
 
   public static async deleteRule(

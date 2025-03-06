@@ -4,35 +4,35 @@ import { configService } from "../../client/services/config";
 import type { IProtocolPortMappingRule } from "../../client/api/models/request";
 import { useMutation, useQuery } from "react-query";
 
+interface IEditingRule {
+  protocol: string;
+  portsString: string;
+}
+
 const RuleEditor: React.FC<{
-  rule: IProtocolPortMappingRule;
-  onSave: (rule: IProtocolPortMappingRule) => void;
+  rule: IEditingRule;
+  onSave: () => void;
   onCancel: () => void;
-  onChange: (rule: IProtocolPortMappingRule) => void;
+  onChange: (rule: IEditingRule) => void;
 }> = ({ rule, onSave, onCancel, onChange }) => {
   return (
     <div className="flex items-center gap-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-700">
       <input
-        type="number"
-        className="w-24 rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
-        value={rule.port.port}
-        onChange={(e) => {
-          const port = parseInt(e.target.value);
-          if (port >= 1 && port <= 65535) {
-            onChange({ ...rule, port: { port } });
-          }
-        }}
-        min={1}
-        max={65535}
+        type="text"
+        className="w-40 rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
+        value={rule.portsString}
+        onChange={(e) => onChange({ ...rule, portsString: e.target.value })}
+        placeholder="e.g. 80, 443"
       />
       <input
         type="text"
         className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
         value={rule.protocol}
         onChange={(e) => onChange({ ...rule, protocol: e.target.value })}
+        placeholder="e.g. HTTP, HTTPS"
       />
       <button
-        onClick={() => onSave(rule)}
+        onClick={onSave}
         className="rounded-lg bg-blue-500 p-2 text-white hover:bg-blue-600"
       >
         <FiSave className="h-5 w-5" />
@@ -53,10 +53,10 @@ const ProtocolRulesCard: React.FC = () => {
   const [editingRule, setEditingRule] = useState<IProtocolPortMappingRule | null>(
     null
   );
-  const [editingRuleState, setEditingRuleState] = useState<IProtocolPortMappingRule | null>(
+  const [editingRuleState, setEditingRuleState] = useState<IEditingRule | null>(
     null
   );
-  const [newRule, setNewRule] = useState<IProtocolPortMappingRule | null>(null);
+  const [newRule, setNewRule] = useState<boolean>(false);
 
   const query = useQuery({
     queryKey: "rules",
@@ -97,20 +97,35 @@ const ProtocolRulesCard: React.FC = () => {
   });
 
   const handleAddRule = () => {
-    const newRuleData = {
-      port: { port: 80 },
+    setNewRule(true);
+    setEditingRuleState({
       protocol: "HTTP",
-    };
-    setNewRule(newRuleData);
-    setEditingRuleState(newRuleData);
+      portsString: "80",
+    });
   };
 
-  const handleSaveRule = async (rule: IProtocolPortMappingRule) => {
+  const handleSaveRule = async () => {
+    if (!editingRuleState) return;
+
     try {
-      await mutationAdd.mutateAsync(rule);
+      const ports = editingRuleState.portsString
+        .split(",")
+        .map((p) => parseInt(p.trim()))
+        .filter((p) => !isNaN(p) && p >= 1 && p <= 65535);
+
+      if (ports.length === 0) {
+        setError("At least one valid port is required");
+        return;
+      }
+
+      await mutationAdd.mutateAsync({
+        protocol: editingRuleState.protocol,
+        ports,
+      });
+
       setEditingRule(null);
       setEditingRuleState(null);
-      setNewRule(null);
+      setNewRule(false);
     } catch (error) {
       console.error("Failed to save rule:", error);
     }
@@ -126,10 +141,13 @@ const ProtocolRulesCard: React.FC = () => {
 
   const handleEditRule = (rule: IProtocolPortMappingRule) => {
     setEditingRule(rule);
-    setEditingRuleState({ ...rule });
+    setEditingRuleState({
+      protocol: rule.protocol,
+      portsString: rule.ports.join(", "),
+    });
   };
 
-  const handleRuleChange = (rule: IProtocolPortMappingRule) => {
+  const handleRuleChange = (rule: IEditingRule) => {
     setEditingRuleState(rule);
   };
 
@@ -173,17 +191,18 @@ const ProtocolRulesCard: React.FC = () => {
               rule={editingRuleState}
               onSave={handleSaveRule}
               onCancel={() => {
-                setNewRule(null);
+                setNewRule(false);
                 setEditingRuleState(null);
               }}
               onChange={handleRuleChange}
             />
           )}
           {rules.map((rule) =>
-            editingRule?.port.port === rule.port.port ? (
+            editingRule?.protocol === rule.protocol &&
+            JSON.stringify(editingRule.ports) === JSON.stringify(rule.ports) ? (
               <RuleEditor
-                key={rule.port.port}
-                rule={editingRuleState || rule}
+                key={`${rule.protocol}-${rule.ports.join(",")}`}
+                rule={editingRuleState || { protocol: rule.protocol, portsString: rule.ports.join(", ") }}
                 onSave={handleSaveRule}
                 onCancel={() => {
                   setEditingRule(null);
@@ -193,15 +212,15 @@ const ProtocolRulesCard: React.FC = () => {
               />
             ) : (
               <div
-                key={rule.port.port}
+                key={`${rule.protocol}-${rule.ports.join(",")}`}
                 className="flex items-center justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-700"
               >
                 <div className="flex items-center gap-4">
                   <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    Port:
+                    Ports:
                   </span>
                   <span className="font-mono text-gray-900 dark:text-white">
-                    {rule.port.port}
+                    {rule.ports.join(", ")}
                   </span>
                   <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                     Protocol:

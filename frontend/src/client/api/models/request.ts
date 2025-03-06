@@ -48,7 +48,7 @@ export interface IPortRange {
 
 export interface IProtocolPortMappingRule {
   protocol: string;
-  port: IPortRange;  // 修复：使用单个 IPortRange 而不是数组
+  ports: number[];  // 1-65535
 }
 
 export interface ICaptureFilter {

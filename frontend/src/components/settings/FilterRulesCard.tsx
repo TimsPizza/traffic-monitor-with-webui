@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { FiFilter, FiPlus, FiEdit2, FiTrash2, FiSave, FiX } from "react-icons/fi";
+import {
+  FiFilter,
+  FiPlus,
+  FiEdit2,
+  FiTrash2,
+  FiSave,
+  FiX,
+} from "react-icons/fi";
 import { configService } from "../../client/services/config";
 import type { ICaptureFilter } from "../../client/api/models/request";
 import type { IFilterAllResponse } from "../../client/api/models/response";
@@ -8,7 +15,9 @@ const FilterRulesCard: React.FC = () => {
   const [filters, setFilters] = useState<ICaptureFilter[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [editingFilter, setEditingFilter] = useState<ICaptureFilter | null>(null);
+  const [editingFilter, setEditingFilter] = useState<ICaptureFilter | null>(
+    null,
+  );
   const [newFilter, setNewFilter] = useState<ICaptureFilter | null>(null);
 
   useEffect(() => {
@@ -75,7 +84,9 @@ const FilterRulesCard: React.FC = () => {
             type="text"
             className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
             value={filter.src_ip || ""}
-            onChange={(e) => onSave({ ...filter, src_ip: e.target.value || null })}
+            onChange={(e) =>
+              onSave({ ...filter, src_ip: e.target.value || null })
+            }
             placeholder="e.g. 192.168.1.1"
           />
         </div>
@@ -87,7 +98,9 @@ const FilterRulesCard: React.FC = () => {
             type="text"
             className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
             value={filter.dst_ip || ""}
-            onChange={(e) => onSave({ ...filter, dst_ip: e.target.value || null })}
+            onChange={(e) =>
+              onSave({ ...filter, dst_ip: e.target.value || null })
+            }
             placeholder="e.g. 192.168.1.2"
           />
         </div>
@@ -139,7 +152,8 @@ const FilterRulesCard: React.FC = () => {
             onChange={(e) =>
               onSave({
                 ...filter,
-                protocol: (e.target.value || null) as ICaptureFilter["protocol"],
+                protocol: (e.target.value ||
+                  null) as ICaptureFilter["protocol"],
               })
             }
           >
@@ -194,7 +208,7 @@ const FilterRulesCard: React.FC = () => {
               ? filters.map((f) =>
                   JSON.stringify(f) === JSON.stringify(editingFilter)
                     ? filter
-                    : f
+                    : f,
                 )
               : [...filters, filter];
             handleSaveFilters(updatedFilters);
@@ -332,7 +346,7 @@ const FilterRulesCard: React.FC = () => {
                   </div>
                 </div>
               </div>
-            )
+            ),
           )}
         </div>
       )}
