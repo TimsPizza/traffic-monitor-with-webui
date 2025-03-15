@@ -55,6 +55,7 @@ class DoubleBufferQueue(Generic[T]):
         self._stop_event = Event()
         self._stop_event.set()
         self._swap_thread = None
+        self._watch_dog_thread = None
         self._active_queue_avg_loads: List[float] = []
         self._processing_queue_avg_loads: List[float] = []
         # Metrics
@@ -74,6 +75,7 @@ class DoubleBufferQueue(Generic[T]):
         """Start processing"""
         self._stop_event.clear()
         self._swap_thread = Thread(target=self._swap_monitor_by_time_loop)
+        self._watch_dog_thread = Thread
         self._swap_thread.daemon = True
         self._swap_thread.start()
         self._queues[0].clear()
@@ -105,7 +107,6 @@ class DoubleBufferQueue(Generic[T]):
         if not success:
             with self._metrics_lock:
                 self._metrics.total_dropped += 1
-            return False
 
         if self._strategy and self._strategy.should_swap(
             current_size=len(self._active_queue),
@@ -113,7 +114,7 @@ class DoubleBufferQueue(Generic[T]):
         ):
             self._swap_event.set()
             self.logger.debug("Swap event triggered")
-        return True
+        return success
 
     def popleft(
         self, block: bool = False, timeout: Optional[float] = None
@@ -171,6 +172,24 @@ class DoubleBufferQueue(Generic[T]):
                 "active_queue_metrics": self._active_queue.get_metrics(),
                 "processing_queue_metrics": self._processing_queue.get_metrics(),
             }
+
+    def _check_queue_health(self) -> bool:
+        # health watch dog
+        current_time = time.time()
+        last_swap_time = self._metrics.last_swap_time
+
+        if current_time - last_swap_time > 60:
+            self.logger.error("Queue swap stopped, attempting recovery")
+            self._force_swap()
+            return False
+        return True
+
+    def _force_swap(self) -> None:
+        self.logger.info("Forcing swap")
+        self._swap_buffers()
+        self._swap_event.clear()
+        self._metrics.last_swap_time = time.time()
+        self._metrics.swap_count += 1
 
     def __enter__(self):
         self.start()

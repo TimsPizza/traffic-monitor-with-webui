@@ -119,6 +119,9 @@ class DynamicQueue(Generic[T]):
                 self._metrics.dropped += 1
             self.not_full.clear()
             return False
+        except Exception as e:
+            self.logger.error(f"Unexpected error in 'enqueue': {e}")
+            return False
 
         # Check if we need to expand
         if self._strategy.should_expand(self._queue.qsize(), self.current_max_size):
