@@ -9,12 +9,6 @@ import {
   IProtocolDistributionResponseRecord,
   ITimeSeriesResponse,
 } from "../client/api/models/response";
-import {
-  DEFAULT_COLOR_PALETTES,
-  EChartType,
-  TPieData,
-  TPolyLineData,
-} from "../client/types";
 import Card, { ICardData } from "../components/Card";
 import Chart from "../components/Chart";
 import { smoothLineData } from "../fakedata";
@@ -24,6 +18,7 @@ import {
   bytesToSize,
   getProtocolDistributionRecordByProtocol,
 } from "../utils/tools";
+import { DEFAULT_COLOR_PALETTES, EChartType, TPieData } from "../types/charts/types";
 
 const now = Date.now() / 1e3;
 const currentDayQueryParams = {
@@ -187,7 +182,7 @@ const Dashboard = () => {
   }, [currentDayQuery.data]);
 
   return (
-    <div id="dashboard-wrapper" className="mx-8 h-full rounded-md ">
+    <div id="dashboard-wrapper" className="mx-8 h-full rounded-md">
       <Row className="mt-2 px-2">
         <Col md={12} lg={6} className="mb-2 p-4">
           <Chart

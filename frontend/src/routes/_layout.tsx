@@ -4,7 +4,7 @@ import Sidebar from "../components/Sidebar";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
 import { WindowSizeContext } from "../App";
-import { EMediaBreakpoints } from "../client/types";
+import { EMediaBreakpoints } from "../types/ui/types";
 
 const Layout = () => {
   const navigate = useNavigate();

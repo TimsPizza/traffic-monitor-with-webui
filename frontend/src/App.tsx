@@ -1,7 +1,7 @@
 import { createContext, useEffect, useState } from "react";
 import { RouterProvider } from "react-router-dom";
 import { router } from "./routes";
-import { EMediaBreakpoints } from "./client/types";
+import { EMediaBreakpoints } from "./types/ui/types";
 import { ToastContainer } from "react-toastify";
 import { QueryClient, QueryClientProvider } from "react-query";
 
