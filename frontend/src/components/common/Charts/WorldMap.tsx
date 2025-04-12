@@ -123,7 +123,7 @@ const WorldMap: React.FC<{
 
   return (
     <div
-      className="relative h-[400px] w-full overflow-hidden"
+      className="relative h-[400px] w-full overflow-hidden border rounded-lg"
       onMouseMove={handleMouseMove}
       onMouseLeave={() => setTooltip((prev) => ({ ...prev, show: false }))}
     >

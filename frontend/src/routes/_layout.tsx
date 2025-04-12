@@ -47,7 +47,7 @@ const Layout = () => {
       <div
         id="sidebar-wrapper"
         ref={sidebarRef}
-        className={`fixed mx-1 my-2 mt-0 h-screen overflow-hidden dark:!bg-gray-800 transition-transform duration-200 ease-linear lg:static lg:h-full lg:translate-x-0`}
+        className={`fixed mx-1 my-2 mt-0 h-screen w-32 overflow-hidden bg-container-light transition-transform duration-200 ease-linear lg:static lg:h-full lg:translate-x-0 dark:!bg-gray-800`}
       >
         <div className="block w-full">
           <button
@@ -65,7 +65,7 @@ const Layout = () => {
       </div>
       <div
         id="content-wrapper"
-        className="flex w-full flex-1 flex-col overflow-auto"
+        className="flex w-full flex-1 flex-col overflow-auto bg-bg-light"
       >
         {/* <header className="relative mt-1 min-h-[5%] p-1">
           <div
@@ -80,8 +80,10 @@ const Layout = () => {
           </div>
           <Header />
         </header> */}
-        <div id="layout-content-wrapper" className="flex-1 p-1">
-          <Outlet />
+        <div id="layout-content-wrapper" className="my-4 mx-2 !bg-container-light border rounded-lg">
+          <div className="flex-1 rounded-lg p-1">
+            <Outlet />
+          </div>
         </div>
         <footer className="h-[8%] p-1">
           <Footer />

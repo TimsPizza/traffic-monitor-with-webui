@@ -113,7 +113,7 @@ const Dashboard = () => {
             loading={trendData.isLoading}
           />
         </div>
-        <div className="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
+        <div className="rounded-lg bg-white dark:bg-gray-800">
           <Chart
             chartType={EChartType.SMOOTH_LINE}
             title={`流量趋势 (${selectedRange.label})`}
@@ -147,7 +147,7 @@ const Dashboard = () => {
             流量来源地区分布
           </h2>
         </div>
-        <div className="min-h-[400px] rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
+        <div className="min-h-[400px] rounded-lg bg-white dark:bg-gray-800">
           <WorldMap loading={geoData.isLoading} data={geoData.data} />
         </div>
       </div>

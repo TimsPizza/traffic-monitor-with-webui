@@ -56,7 +56,7 @@ const Chart: React.FC<ChartProps> = ({
 
   return (
     <div
-      className={`flex h-full w-full flex-col rounded-xl border border-gray-100/20 bg-white/50 shadow-lg backdrop-blur-sm transition-all duration-300 hover:shadow-xl dark:!bg-gray-800 ${className}`}
+      className={`flex h-full w-full flex-col rounded-xl border border-gray-100/20 bg-white/50 backdrop-blur-sm transition-all duration-300 dark:!bg-gray-800 ${className}`}
     >
       {title && (
         <div className="top-0 border-b border-gray-100/20 px-4 py-2">
