@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "react-countup": "^6.5.3"
+    "react-countup": "^6.5.3",
+    "react-simple-maps": "^3.0.0"
   }
 }

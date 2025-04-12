@@ -7,31 +7,29 @@ import {
   IBySourceRegion,
   IByTimeRange,
   IByTopSourceIps,
-  IProtocolAnalysis,
   IProtocolDistribution,
   ITimeSeries,
-  ITrafficSummary,
+  ITrafficSummary
 } from "../api/models/request";
 import { DataApi } from "../api/requests";
 
 export class QueryService {
   private static queryMethods = {
-    'bySourceIP': QueryService.queryBySourceIP,
-    'byProtocol': QueryService.queryByProtocol,
-    'byTimeRange': QueryService.queryByTimeRange,
-    'byDestinationPort': QueryService.queryByDestinationPort,
-    'bySourceRegion': QueryService.queryBySourceRegion,
-    'protocolDistribution': QueryService.queryProtocolDistribution,
-    'trafficSummary': QueryService.queryTrafficSummary,
-    'timeSeries': QueryService.queryTimeSeries,
-    'protocolAnalysis': QueryService.queryProtocolAnaysis,
-    'topSourceIPs': QueryService.queryTopSourceIPs,
+    bySourceIP: QueryService.queryBySourceIP,
+    byProtocol: QueryService.queryByProtocol,
+    byTimeRange: QueryService.queryByTimeRange,
+    byDestinationPort: QueryService.queryByDestinationPort,
+    bySourceRegion: QueryService.queryBySourceRegion,
+    protocolDistribution: QueryService.queryProtocolDistribution,
+    trafficSummary: QueryService.queryTrafficSummary,
+    timeSeries: QueryService.queryTimeSeries,
+    topSourceIPs: QueryService.queryTopSourceIPs,
   };
 
   /**
-   * 
-   * @param type 
-   * @param payload 
+   *
+   * @param type
+   * @param payload
    * @generics TRequest, TResponse
    * @returns The response of the query.
    * @throws {ApiError} if the query type is invalid
@@ -39,7 +37,7 @@ export class QueryService {
    */
   public static async query<TRequest extends object, TResponse>(
     type: keyof typeof QueryService.queryMethods,
-    payload: TRequest
+    payload: TRequest,
   ) {
     const method = QueryService.queryMethods[type];
     if (!method) {
@@ -47,7 +45,9 @@ export class QueryService {
     }
     try {
       // @ts-ignore
-      const response = await method(payload as any) as Promise<AxiosResponse<TResponse>>;
+      const response = (await method(payload as any)) as Promise<
+        AxiosResponse<TResponse>
+      >;
       console.log("queryService response:", response);
       return response;
     } catch (error) {
@@ -86,10 +86,6 @@ export class QueryService {
 
   public static async queryTimeSeries(config: ITimeSeries) {
     return await DataApi.getTimeSeries(config);
-  }
-
-  public static async queryProtocolAnaysis(config: IProtocolAnalysis) {
-    return await DataApi.getProtocolAnalysis(config);
   }
 
   public static async queryTopSourceIPs(config: IByTopSourceIps) {

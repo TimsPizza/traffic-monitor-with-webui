@@ -6,14 +6,13 @@ import {
   IBySourceRegion,
   IByTimeRange,
   IByTopSourceIps,
-  IProtocolAnalysis,
+  ICaptureFilter,
   IProtocolDistribution,
+  IProtocolPortMappingRule,
   ITimeSeries,
   ITrafficSummary,
   TLoginForm,
-  TSignUpForm,
-  ICaptureFilter,
-  IProtocolPortMappingRule,
+  TSignUpForm
 } from "../api/models/request";
 import {
   IByDestinationPortResponse,
@@ -22,14 +21,14 @@ import {
   IBySourceRegionResponse,
   IByTimeRangeResponse,
   IByTopSourceIpsResponse,
+  INetworkInterfacesResponse,
   IPaginatedResponse,
   IProtocolDistributionResponse,
+  IProtocolPortMappingResponse,
   ITimeSeriesResponse,
   ITrafficSummaryResponse,
   TAuthResponse,
   TFilterAllResponse,
-  IProtocolPortMappingResponse,
-  INetworkInterfacesResponse,
 } from "../api/models/response";
 import { apiClient } from "./apiClient";
 

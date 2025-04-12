@@ -97,7 +97,7 @@ export const GMT_TO_IANA: Record<TTimezone, TIanaTimezone> = {
 // convert unix timestamp to date string with timezone support
 export const unix2DateString = (
   unix: number,
-  formatter: TDateFormatters,
+  formatter: TDateFormatters = "MM_DD",
   timezone: TTimezone = "GMT+8",
 ): string => {
   const date = new Date(unix * 1000);

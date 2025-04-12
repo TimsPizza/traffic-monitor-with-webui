@@ -7,7 +7,6 @@ export type TQueryType =
   | "protocolDistribution"
   | "trafficSummary"
   | "timeSeries"
-  | "protocolAnalysis"
   | "topSourceIPs";
 
 export type TQueryParams = {

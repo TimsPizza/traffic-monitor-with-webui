@@ -17,7 +17,7 @@ export type TChartData =
 
 export type TChartDataBase = {
   name: string; // data name for x-axis display
-  value: number | string;
+  value: number;
 };
 export type TRadialBarData = TChartDataBase & {
   fill: string;

@@ -43,12 +43,12 @@ export interface IBySourceRegionResponseItem
 export interface IBySourceRegionResponse
   extends IPaginatedResponse<IBySourceRegionResponseItem> {}
 
-export interface IByTopSourceIpsResponseItem {
+export type IByTopSourceIpsResponseItem = Array<{
   ip: string;
-  region: string;
-  totalPackets: number;
-  totalBytes: number;
-}
+  src_region: string;
+  total_packets: number;
+  total_bytes: number;
+}>;
 export interface IByTopSourceIpsResponse
   extends IPaginatedResponse<IByTopSourceIpsResponseItem> {}
 
@@ -118,3 +118,15 @@ export interface INetworkInterfacesResponse {
   interfaces: string[];
   selected: string;
 }
+
+export type TQueryResponses =
+  | ITimeSeriesResponse
+  | IProtocolDistributionResponse
+  | ITrafficSummaryResponse
+  | IByTopSourceIpsResponse
+  | IBySourceRegionResponse
+  | IByDestinationPortResponse
+  | IBySourceIPResponse
+  | IByTimeRangeResponse
+  | IByRegionResponse
+  | IByProtocolResponse;

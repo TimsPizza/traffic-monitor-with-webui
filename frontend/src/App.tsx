@@ -55,7 +55,7 @@ const App = () => {
     >
       <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />
-        <ToastContainer />
+        {/* <ToastContainer /> */}
       </QueryClientProvider>
     </WindowSizeContext.Provider>
   );

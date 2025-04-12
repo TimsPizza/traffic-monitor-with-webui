@@ -29,7 +29,7 @@ export const getProtocolDistributionRecordByProtocol = (
 export const bytesToSize = (bytes: number) => {
   const sizes = ["B", "KB", "MB", "GB", "TB"];
   if (bytes === 0) return {
-    size: 0,
+    size: '0',
     unit: sizes[0],
   }
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
