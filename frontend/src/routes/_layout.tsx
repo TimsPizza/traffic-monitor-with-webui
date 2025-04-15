@@ -2,23 +2,31 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import Footer from "../components/Footer";
-import Header from "../components/Header";
+// import Header from "../components/Header"; // Header seems unused now
 import { WindowSizeContext } from "../App";
 import { EMediaBreakpoints } from "../types/ui/types";
+import Header from "../components/Header";
+// Removed PiBinaryLight import as it's moved to Sidebar
+// Removed duplicate imports below
 
 const Layout = () => {
   const navigate = useNavigate();
-  const { breakpoint } = React.useContext(WindowSizeContext);
-  const [shouldSidebarCollapse, setShouldSidebarCollapse_] = useState(false);
+  const { breakpoint } = React.useContext(WindowSizeContext); // Keep only one declaration
+  const [shouldSidebarCollapse, setShouldSidebarCollapse] = useState(false); // Simplified state setter name
   const [showOverlay, setShowOverlay] = useState(false);
-  const setShouldSidebarCollapse = (val: boolean) => {
-    setShouldSidebarCollapse_(val);
-    setShowOverlay(!val);
-  };
 
-  const toggleSidebarCollapse = () => {
-    setShouldSidebarCollapse(!shouldSidebarCollapse);
-  };
+  const toggleSidebarCollapse = useCallback(() => {
+    // Use useCallback for stability if passed down deeply
+    setShouldSidebarCollapse((prev) => {
+      const nextState = !prev;
+      // Only show overlay on mobile when expanding the sidebar
+      if (breakpoint <= EMediaBreakpoints.lg) {
+        setShowOverlay(nextState === false); // Show overlay if sidebar is NOT collapsed (i.e., expanded)
+      }
+      console.log("Sidebar toggled:", nextState);
+      return nextState;
+    });
+  }, [breakpoint]); // Dependency on breakpoint to re-create toggle logic if breakpoint changes
   const sidebarRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     navigate("/dashboard");
@@ -26,7 +34,8 @@ const Layout = () => {
   useEffect(() => {
     const shouldCollapse = breakpoint <= EMediaBreakpoints.lg;
     setShouldSidebarCollapse(shouldCollapse);
-    if (!shouldCollapse) {
+    // Hide overlay if screen becomes larger than lg while sidebar is expanded
+    if (!shouldCollapse && showOverlay) {
       setShowOverlay(false);
     }
   }, [breakpoint]);
@@ -39,49 +48,37 @@ const Layout = () => {
       <div
         id="mobile-overlay"
         className={`fixed inset-0 z-40 bg-black bg-opacity-50 transition-opacity duration-200 lg:hidden ${showOverlay ? "opacity-100" : "pointer-events-none opacity-0"}`}
-        onClick={() => {
-          setShouldSidebarCollapse(true);
-          setShowOverlay(false);
-        }}
+        // onClick={() => {
+        //   setShouldSidebarCollapse(true);
+        //   setShowOverlay(false);
+        // }}
       />
       <div
         id="sidebar-wrapper"
         ref={sidebarRef}
-        className={`fixed mx-1 my-2 mt-0 h-screen w-32 overflow-hidden bg-container-light transition-transform duration-200 ease-linear lg:static lg:h-full lg:translate-x-0 dark:!bg-gray-800`}
+        // Apply width transition and dynamic width classes
+        className={`fixed z-50 h-screen overflow-y-auto overflow-x-hidden bg-container-light transition-all duration-300 ease-in-out lg:static lg:h-auto lg:overflow-visible dark:!bg-gray-800 ${shouldSidebarCollapse ? "w-20" : "w-64"} ${breakpoint <= EMediaBreakpoints.lg && shouldSidebarCollapse ? "-translate-x-full" : "translate-x-0"} lg:translate-x-0`} // Handle mobile slide-in/out
       >
-        <div className="block w-full">
-          <button
-            id="sidebar-toggler"
-            className={`bi bi-justify-left ml-6 block scale-[1.2] p-2 text-xl dark:text-white`}
-            onClick={toggleSidebarCollapse}
-          />
-        </div>
-        <nav className="left-0 top-0 z-50 h-full w-full flex-1">
-          <Sidebar
-            setShouldSidebarCollapse={setShouldSidebarCollapse}
-            shouldSidebarCollapse={shouldSidebarCollapse}
-          />
-        </nav>
+        <Sidebar
+          toggleSidebarCollapse={toggleSidebarCollapse}
+          shouldSidebarCollapse={shouldSidebarCollapse}
+        />
       </div>
       <div
         id="content-wrapper"
-        className="flex w-full flex-1 flex-col overflow-auto bg-bg-light"
+        className="flex w-full flex-1 flex-col overflow-auto bg-bg-light dark:!bg-gray-900" // Ensure dark bg applies here too
       >
-        {/* <header className="relative mt-1 min-h-[5%] p-1">
+        <div
+          id="layout-content-wrapper"
+          className={`rounded-lg border !bg-container-light lg:mx-2`}
+        >
           <div
-            id="sidebar-toggle"
-            className={`absolute left-0 top-1/2 z-50 h-8 w-8 -translate-y-1/2 translate-x-1/2 rounded-lg border border-gray-300 text-center transition-transform duration-300 ${shouldSidebarCollapse ? "" : "hidden"} lg:hidden`}
-            onClick={() => {
-              setShouldSidebarCollapse(false);
-              setShowOverlay(true);
-            }}
+            className={`flex-1 rounded-lg ${breakpoint >= EMediaBreakpoints.lg ? "p-1" : ""} `}
           >
-            <i className={`bi bi-list text-xl`} />
-          </div>
-          <Header />
-        </header> */}
-        <div id="layout-content-wrapper" className="my-4 mx-2 !bg-container-light border rounded-lg">
-          <div className="flex-1 rounded-lg p-1">
+            <Header
+              shouldSidebarCollapse={shouldSidebarCollapse}
+              toggleSidebarCollapse={toggleSidebarCollapse}
+            />
             <Outlet />
           </div>
         </div>

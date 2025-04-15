@@ -5,9 +5,12 @@ import WorldMap from "../components/common/Charts/WorldMap";
 import TimeRangeSelector, { TimeRange } from "../components/TimeRangeSelector";
 import { useChartData, useHeatmapData, useProtocolsData } from "../hooks";
 import { DEFAULT_COLOR_PALETTES, EChartType } from "../types/charts/types";
+import { WindowSizeContext } from "../App";
+import { EMediaBreakpoints } from "../types/ui/types";
 
 const Dashboard = () => {
   // Time range state
+  const { breakpoint } = React.useContext(WindowSizeContext);
   const [selectedRange, setSelectedRange] = React.useState<TimeRange>({
     label: "最近7天",
     start: Date.now() / 1e3 - 86400 * 7,
@@ -53,7 +56,9 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6">
+    <div
+      className={`mx-auto max-w-7xl ${breakpoint >= EMediaBreakpoints.lg ? "px-4 py-6" : ""}`}
+    >
       {/* Section 1: Protocol Statistics */}
       <div className="mb-8">
         <div className="mb-4 flex items-center justify-between">

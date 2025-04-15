@@ -1,30 +1,32 @@
-import React, { useEffect, useRef, useState } from "react";
+import React from "react";
+import { useLocation } from "react-router-dom";
 
-const Header = () => {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const headerRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 48) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
+interface HeaderProps {
+  shouldSidebarCollapse: boolean;
+  toggleSidebarCollapse: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({
+  shouldSidebarCollapse,
+  toggleSidebarCollapse,
+}) => {
+  const { pathname } = useLocation();
   return (
-    <div
-      className={`flex h-full w-full items-center justify-center rounded-md bg-container-light`}
-      id="header-container"
-      ref={headerRef}
-    >
-      <span className="text-center">Header PlaceHolder</span>
-      <i className="bi bi-house text-2xl ml-4"></i>
-    </div>
+    <header className="relative mt-1 flex min-h-12 flex-row items-center bg-container-light p-1">
+      <button
+        id="sidebar-toggler"
+        className={`ml-auto block scale-[1.2] p-2 text-xl lg:ml-6 dark:text-white`}
+        // Use ml-auto for better positioning when title hides
+        onClick={toggleSidebarCollapse}
+      >
+        <i
+          className={`bi ${shouldSidebarCollapse ? "bi-justify-right" : "bi-justify-left"}`}
+        ></i>
+      </button>
+      <h3 className="text-3xl font-bold capitalize">
+        #{pathname.split("/").at(-1)}
+      </h3>
+    </header>
   );
 };
 
