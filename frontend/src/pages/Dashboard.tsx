@@ -12,9 +12,10 @@ const Dashboard = () => {
   // Time range state
   const { breakpoint } = React.useContext(WindowSizeContext);
   const [selectedRange, setSelectedRange] = React.useState<TimeRange>({
-    label: "最近7天",
+    label: "Recent 7 Days",
     start: Date.now() / 1e3 - 86400 * 7,
     end: Date.now() / 1e3,
+    interval: 86400, // 1 day
   });
 
   // Protocols data
@@ -35,7 +36,7 @@ const Dashboard = () => {
     timeRange: selectedRange,
     queryType: "timeSeries",
     chartType: "trend",
-    interval: 86400, // 1天
+    interval: selectedRange.interval,
   });
 
   // Geographic distribution data

@@ -4,6 +4,7 @@ export interface TimeRange {
   start: number;
   end: number;
   label: string;
+  interval: number; // seconds
 }
 
 interface TimeRangeSelectorProps {
@@ -14,19 +15,22 @@ interface TimeRangeSelectorProps {
 
 const PRESET_RANGES: TimeRange[] = [
   {
-    label: '最近24小时',
+    label: 'Recent 1 Day',
     start: Date.now() / 1e3 - 86400,
     end: Date.now() / 1e3,
+    interval: 3600, // 1 hour
   },
   {
-    label: '最近7天',
+    label: 'Recent 7 Days',
     start: Date.now() / 1e3 - 86400 * 7,
     end: Date.now() / 1e3,
+    interval: 86400, // 1 day
   },
   {
-    label: '最近30天',
+    label: 'Recent 30 Days',
     start: Date.now() / 1e3 - 86400 * 30,
     end: Date.now() / 1e3,
+    interval: 86400, // 1 day
   },
 ];
 
