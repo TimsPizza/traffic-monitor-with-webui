@@ -4,7 +4,6 @@ import ProtocolRulesCard from "../components/settings/ProtocolRulesCard";
 import FilterRulesCard from "../components/settings/FilterRulesCard";
 
 const Settings = () => {
-
   return (
     <div className="min-h-screen w-full bg-gray-50 p-6 dark:bg-gray-900">
       <div className="mx-auto max-w-7xl space-y-6">
@@ -19,20 +18,20 @@ const Settings = () => {
         </div>
 
         {/* Settings Grid */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6">
           {/* Network Interface Section */}
           <div className="w-full">
             <NetworkInterfaceCard />
           </div>
 
+          {/* Filter Rules Section - Full Width */}
+          <div className="w-full">
+            <FilterRulesCard />
+          </div>
+
           {/* Protocol Rules Section */}
           <div className="w-full">
             <ProtocolRulesCard />
-          </div>
-
-          {/* Filter Rules Section - Full Width */}
-          <div className="w-full lg:col-span-2">
-            <FilterRulesCard />
           </div>
         </div>
 

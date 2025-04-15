@@ -797,8 +797,16 @@ video {
   height: 100vh;
 }
 
+.h-72 {
+  height: 18rem;
+}
+
 .max-h-\[calc\(100vh-200px\)\] {
   max-height: calc(100vh - 200px);
+}
+
+.max-h-48 {
+  max-height: 12rem;
 }
 
 .min-h-48 {
@@ -827,6 +835,14 @@ video {
 
 .min-h-12 {
   min-height: 3rem;
+}
+
+.min-h-6 {
+  min-height: 1.5rem;
+}
+
+.min-h-64 {
+  min-height: 16rem;
 }
 
 .w-1\/2 {
